@@ -209,10 +209,18 @@ def prepare(
 
 
 def main() -> None:
-    p = load_params()["data"]
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--params", default="params.yaml", help="Path to params.yaml")
+    args = parser.parse_args()
+
+    params = load_params(args.params)
+    p = params["data"]
+    out_dir = Path(p["processed_dir"])
     stats = prepare(
         raw_dir=p["raw_dir"],
-        out_dir=p["processed_dir"],
+        out_dir=out_dir,
         val_fraction=p["val_fraction"],
         seed=p["seed"],
         count_bucket=p["count_bucket"],
@@ -222,7 +230,6 @@ def main() -> None:
         link_images=p["link_images"],
     )
     print(json.dumps(stats, indent=2))
-
 
 if __name__ == "__main__":
     main()

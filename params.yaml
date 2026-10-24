@@ -16,3 +16,4 @@ model:
   pretrained: checkpoints/pretrained/yolov8n.pt    # downloaded automatically on first run
   base_checkpoint: checkpoints/base/yolov8n_base.pt
   imgsz: 640                     # must be a multiple of 32
+

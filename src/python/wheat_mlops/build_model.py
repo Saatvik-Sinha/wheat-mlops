@@ -59,10 +59,16 @@ def build(pretrained: str | Path, base_checkpoint: str | Path, imgsz: int) -> di
 
 
 def main() -> None:
-    m = load_params()["model"]
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--params", default="params.yaml", help="Path to params.yaml")
+    args = parser.parse_args()
+
+    params = load_params(args.params)
+    m = params["model"]
     info = build(m["pretrained"], m["base_checkpoint"], m["imgsz"])
     print(json.dumps(info, indent=2))
-
 
 if __name__ == "__main__":
     main()
