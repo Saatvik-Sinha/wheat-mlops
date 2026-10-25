@@ -1,0 +1,60 @@
+# PLACEHOLDER workload. The real API arrives in Part 8. Until then this container only
+# serves a directory listing, which is enough to prove that image loading, scheduling,
+# probes, resource limits, the Service and rolling updates all work.
+# Part 8 changes: `command` (start the API) and the probe paths (/health).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wheat-api
+  namespace: wheat-mlops
+  labels:
+    app: wheat-api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: wheat-api
+  template:
+    metadata:
+      labels:
+        app: wheat-api
+    spec:
+      containers:
+        - name: api
+          image: wheat-mlops:0.1.0
+          imagePullPolicy: Never   # the image is loaded into minikube, there is no registry
+          command: ["python", "-m", "http.server", "8000"]
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
