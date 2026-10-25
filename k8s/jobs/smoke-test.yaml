@@ -1,0 +1,36 @@
+# One-off check that the image works INSIDE the cluster. Jobs are immutable, so delete the
+# old one before re-applying:  kubectl -n wheat-mlops delete job wheat-smoke-test --ignore-not-found
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wheat-smoke-test
+  namespace: wheat-mlops
+  labels:
+    app: wheat-smoke-test
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 900
+  template:
+    metadata:
+      labels:
+        app: wheat-smoke-test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke-test
+          image: wheat-mlops:0.1.0
+          imagePullPolicy: Never
+          command: ["python", "smoke_test.py"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
