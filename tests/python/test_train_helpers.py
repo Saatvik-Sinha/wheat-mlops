@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from wheat_mlops.train import (
     SMOKE_ARGS,
     extract_metrics,
