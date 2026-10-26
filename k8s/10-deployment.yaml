@@ -1,7 +1,3 @@
-# PLACEHOLDER workload. The real API arrives in Part 8. Until then this container only
-# serves a directory listing, which is enough to prove that image loading, scheduling,
-# probes, resource limits, the Service and rolling updates all work.
-# Part 8 changes: `command` (start the API) and the probe paths (/health).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,31 +23,41 @@ spec:
     spec:
       containers:
         - name: api
-          image: wheat-mlops:0.1.0
+          image: wheat-mlops:0.2.0
           imagePullPolicy: Never   # the image is loaded into minikube, there is no registry
-          command: ["python", "-m", "http.server", "8000"]
           ports:
             - name: http
               containerPort: 8000
+          env:
+            - name: MODEL_VERSION
+              value: "yolov8s-v1"
+            - name: INFERENCE_THREADS
+              value: "2"
+            - name: CORS_ORIGINS
+              value: "*"
+          startupProbe:            # the model takes a while to load on a slow CPU
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 36
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
-            initialDelaySeconds: 3
-            periodSeconds: 5
+            periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            periodSeconds: 20
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 250m
+              memory: 512Mi
             limits:
-              cpu: "1"
-              memory: 1Gi
+              cpu: "2"
+              memory: 1536Mi
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001

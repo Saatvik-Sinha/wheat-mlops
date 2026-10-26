@@ -1,0 +1,8 @@
+# Extra packages needed only by the inference API (installed in the Docker image).
+# Kept out of pyproject.toml / uv.lock on purpose so the two pipeline branches do not
+# diverge on those shared files.
+fastapi>=0.110,<1
+uvicorn>=0.29,<1
+prometheus-client>=0.20,<1
+python-multipart>=0.0.9
+pyngrok>=7,<8
