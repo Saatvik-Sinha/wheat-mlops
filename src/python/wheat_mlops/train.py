@@ -4,8 +4,7 @@ Meant to run on a Kaggle/Colab GPU (see notebooks/kaggle_train.ipynb). It is del
 standalone: it imports nothing from the rest of the package, so it runs on Kaggle without
 installing the project (whose Python requirement is newer than Kaggle's).
 
-No MLflow / DVC here. Registering the results is a separate step, done from the files this
-script writes into --out-dir: best.pt, metrics.json, results.csv, prepare_stats.json.
+Each invocation writes the checkpoint, metrics, results, and preparation summary into --out-dir.
 
 Usage:
     python train.py --data-yaml data/processed/dataset.yaml --out-dir trained [--smoke]
@@ -84,7 +83,7 @@ def train(data_yaml: str | Path, out_dir: str | Path, cfg: dict) -> dict:
     # Part 7 only produces files; experiment tracking is added later by the pipeline owners.
     os.environ.setdefault("WANDB_MODE", "disabled")
     try:
-        settings.update({"mlflow": False, "wandb": False})
+        settings.update({"wandb": False})
     except Exception as exc:  # noqa: BLE001
         print(f"note: could not switch off Ultralytics logger integrations: {exc}")
 

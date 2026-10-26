@@ -8,7 +8,7 @@ train:
     batch: 16
     patience: 15           # stop early if val fitness does not improve for 15 epochs
     seed: 42
-    workers: 4
+    workers: 0
     cache: ram
     flipud: 0.5            # wheat photos are top-down, so vertical flips are valid
     fliplr: 0.5
