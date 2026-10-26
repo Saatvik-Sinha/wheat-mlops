@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wheat head detection</title>
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --text: #1d2a1f; --muted: #5d6b5f;
+    --line: #d9dfd6; --accent: #2f7d32; --accent-text: #ffffff;
+    --ok: #2f7d32; --warn: #b26a00; --bad: #b3261e; --box: #ff3d71;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121612; --card: #1b221c; --text: #e6ece6; --muted: #9aa89b;
+      --line: #2e382f; --accent: #66bb6a; --accent-text: #0e1a0f;
+      --ok: #66bb6a; --warn: #ffb74d; --bad: #ef7b73; --box: #ff6b93;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  .sub { margin: 0 0 20px; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  input[type=text] { flex: 1; min-width: 0; padding: 9px 11px; border: 1px solid var(--line);
+          border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pill { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line);
+          font-size: .85rem; color: var(--muted); white-space: nowrap; }
+  .pill.ok { color: var(--ok); border-color: var(--ok); }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.bad { color: var(--bad); border-color: var(--bad); }
+  button { margin-top: 12px; padding: 10px 20px; border: 0; border-radius: 8px; cursor: pointer;
+           background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+           gap: 10px; margin-bottom: 14px; }
+  .stat b { display: block; font-size: 1.35rem; }
+  .stat span { color: var(--muted); font-size: .85rem; }
+  canvas { display: block; width: 100%; height: auto; border-radius: 8px; background: var(--bg); }
+  #error { color: var(--bad); min-height: 1.5em; margin: 0; }
+  .hint { color: var(--muted); font-size: .85rem; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Wheat head detection</h1>
+  <p class="sub">Upload a field photo. A YOLO model served from a local Kubernetes cluster finds
+     and counts the wheat heads.</p>
+
+  <section class="card">
+    <label for="api">API address (optional - leave empty to auto-detect)</label>
+    <div class="row">
+      <input type="text" id="api" placeholder="https://your-tunnel.ngrok-free.app" autocomplete="off">
+      <span id="status" class="pill">no address</span>
+    </div>
+    <p class="hint">Tip: open this page with <code>?api=https://…</code> to fill the address automatically.</p>
+  </section>
+
+  <section class="card">
+    <label for="file">Photo</label>
+    <input type="file" id="file" accept="image/*">
+    <label for="conf" style="margin-top:14px">Confidence threshold: <span id="confVal">0.25</span></label>
+    <input type="range" id="conf" min="0.05" max="0.9" step="0.05" value="0.25">
+    <button id="run" disabled>Detect</button>
+  </section>
+
+  <p id="error" role="alert"></p>
+
+  <section class="card" id="result" hidden>
+    <div class="stats">
+      <div class="stat"><b id="sCount">–</b><span>wheat heads</span></div>
+      <div class="stat"><b id="sConf">–</b><span>mean confidence</span></div>
+      <div class="stat"><b id="sModel">–</b><span>model time (ms)</span></div>
+      <div class="stat"><b id="sTotal">–</b><span>round trip (ms)</span></div>
+      <div class="stat"><b id="sVersion">–</b><span>model version</span></div>
+    </div>
+    <canvas id="canvas"></canvas>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const apiEl = $("api"), statusEl = $("status"), fileEl = $("file");
+const confEl = $("conf"), runEl = $("run"), canvas = $("canvas");
+const HEADERS = { "ngrok-skip-browser-warning": "1" }; // skips ngrok's free-tier interstitial
+let image = null;
+let objectUrl = null;
+let activeApi = "";
+// Tried in parallel; the first healthy one in this order is used.
+const BACKENDS = [
+  "http://localhost:8080", // kubectl port-forward
+  "http://localhost:8000", // docker run
+  "https://oxychloric-carma-subgelatinously.ngrok-free.dev",
+];
+
+function baseUrl() { return apiEl.value.trim().replace(/\/+$/, ""); }
+function showError(message) { $("error").textContent = message || ""; }
+function setStatus(text, kind) { statusEl.textContent = text; statusEl.className = "pill " + kind; }
+function updateButton() { runEl.disabled = !(fileEl.files.length && activeApi); }
+
+function saveAddress() {
+  try { localStorage.setItem("wheatApi", apiEl.value.trim()); } catch (e) { /* storage may be blocked */ }
+}
+
+async function probe(url) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 2500);
+  try {
+    const r = await fetch(url + "/health", { headers: HEADERS, signal: ctl.signal });
+    const j = await r.json();
+    return r.ok && j.status === "ok" ? j : null;
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function checkHealth() {
+  const manual = baseUrl(); // an address typed by the user wins over auto-detection
+  const candidates = manual ? [manual] : BACKENDS;
+  setStatus("checking…", "");
+  const results = await Promise.all(candidates.map(probe));
+  const i = results.findIndex(Boolean);
+  activeApi = i >= 0 ? candidates[i] : "";
+  if (i >= 0) setStatus(`online · ${new URL(activeApi).host} · ${results[i].model_version}`, "ok");
+  else setStatus("no backend reachable", "bad");
+  updateButton();
+}
+
+function draw(data) {
+  canvas.width = data.image_width;
+  canvas.height = data.image_height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
+  ctx.lineWidth = Math.max(2, canvas.width / 400);
+  for (const d of data.detections) ctx.strokeRect(d.x1, d.y1, d.x2 - d.x1, d.y2 - d.y1);
+}
+
+function render(data, roundTripMs) {
+  $("sCount").textContent = data.count;
+  $("sConf").textContent = data.mean_confidence == null ? "–" : (data.mean_confidence * 100).toFixed(0) + "%";
+  $("sModel").textContent = Math.round(data.inference_ms);
+  $("sTotal").textContent = Math.round(roundTripMs);
+  $("sVersion").textContent = data.model_version;
+  $("result").hidden = false;
+  draw(data);
+}
+
+async function detect() {
+  showError("");
+  runEl.disabled = true;
+  runEl.textContent = "Detecting…";
+  const body = new FormData();
+  body.append("file", fileEl.files[0]);
+  const started = performance.now();
+  try {
+    const r = await fetch(`${activeApi}/predict?conf=${confEl.value}`, { method: "POST", body, headers: HEADERS });
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (e) { throw new Error(`Unexpected response (${r.status}). Is the API address correct?`); }
+    if (!r.ok) throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail));
+    render(data, performance.now() - started);
+  } catch (e) {
+    showError(e instanceof TypeError ? "Backend unreachable - checking the other addresses…" : (e.message || String(e)));
+    if (e instanceof TypeError) checkHealth();
+  } finally {
+    runEl.textContent = "Detect";
+    updateButton();
+  }
+}
+
+fileEl.addEventListener("change", () => {
+  showError("");
+  updateButton();
+  if (!fileEl.files.length) return;
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+  objectUrl = URL.createObjectURL(fileEl.files[0]);
+  image = new Image();
+  image.onload = () => {
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    canvas.getContext("2d").drawImage(image, 0, 0);
+    $("result").hidden = false;
+    for (const id of ["sCount", "sConf", "sModel", "sTotal", "sVersion"]) $(id).textContent = "–";
+  };
+  image.src = objectUrl;
+});
+confEl.addEventListener("input", () => { $("confVal").textContent = Number(confEl.value).toFixed(2); });
+apiEl.addEventListener("change", () => { saveAddress(); checkHealth(); });
+runEl.addEventListener("click", detect);
+
+(function init() {
+  const fromQuery = new URLSearchParams(location.search).get("api");
+  let saved = "";
+  try { saved = localStorage.getItem("wheatApi") || ""; } catch (e) { /* ignore */ }
+  apiEl.value = fromQuery || saved;
+  if (fromQuery) saveAddress();
+  checkHealth();
+})();
+</script>
+</body>
+</html>

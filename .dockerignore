@@ -5,11 +5,15 @@ venv
 data
 runs
 mlruns
-checkpoints
-*.pt
+checkpoints/base
+checkpoints/pretrained
+checkpoints/trained/*
+**/*.pt
+!checkpoints/trained/best.pt
 *.zip
 **/__pycache__
 .pytest_cache
 .ruff_cache
 k8s
 tests
+.env

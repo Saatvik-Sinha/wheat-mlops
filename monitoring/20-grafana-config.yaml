@@ -11,6 +11,7 @@ data:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus
         access: proxy
         url: http://prometheus.wheat-mlops.svc:9090
         isDefault: true
