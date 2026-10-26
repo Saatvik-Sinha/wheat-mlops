@@ -31,6 +31,8 @@ RUN uv venv /opt/venv \
     else \
         uv pip install --python /opt/venv/bin/python -r requirements.txt ; \
     fi
+COPY requirements-serve.txt ./
+RUN uv pip install --python /opt/venv/bin/python -r requirements-serve.txt
 
 # 2) The project itself (changes often, so it comes last).
 COPY src/python ./src/python
@@ -59,3 +61,10 @@ USER app
 # No model weights or data are baked in. How the model reaches the container is decided
 # in Part 8 (it differs between pipeline A and B).
 CMD ["python", "smoke_test.py"]
+
+# ---------- serve: runtime + API + the trained model ----------
+FROM runtime AS serve
+COPY checkpoints/trained/best.pt /app/models/best.pt
+ENV MODEL_PATH=/app/models/best.pt
+EXPOSE 8000
+CMD ["uvicorn", "wheat_mlops.api:app", "--host", "0.0.0.0", "--port", "8000"]
