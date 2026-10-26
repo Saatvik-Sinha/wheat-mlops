@@ -12,7 +12,10 @@ venv/
 #  are NOT ignored.)
 data/raw/
 data/processed/
+data/temp/
+data/working/
 *.pt
+/improve_params.yaml
 checkpoints/**/*.json
 runs/
 mlruns/

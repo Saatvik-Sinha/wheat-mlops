@@ -158,4 +158,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import sys
+    sys.argv[1:] = ['--data-yaml', 'data\\processed/dataset.yaml', '--out-dir', 'data\\working\\trained', '--params', './improve_params.yaml']
     main()
