@@ -37,7 +37,7 @@ pipeline {
                         // torch, so install CPU-only wheels instead -- same trick as docker/Dockerfile.
                         sh '''
                             uv venv --clear --python "$PYTHON_VERSION"
-                            uv export --frozen --all-groups --no-hashes --no-emit-project -o requirements.txt
+                            uv export --frozen --all-groups --no-hashes --no-emit-project -o requirements.txt > /dev/null
                             grep -vE '^(nvidia-|triton)' requirements.txt > requirements.cpu.txt
                             uv pip install -r requirements.cpu.txt \
                                 --extra-index-url https://download.pytorch.org/whl/cpu \
