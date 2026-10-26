@@ -6,7 +6,7 @@ MLOps mini-project on the Kaggle *Global Wheat Detection* competition
 ## Pipeline B (DVC Experimentation & Pipelining)
 - **Data Ingestion & Preparation**: Fully managed and versioned via DVC stages (`download_data`, `prepare_data`).
 - **Model Building & Experiment Tracking**: Native DVC pipeline stage (`build_model`) tracking parameters from `params.yaml`, outputs (`checkpoints/base/yolov8n_base.pt`), and metrics (`checkpoints/base/model_info.json`).
-- **CI/CD**: Jenkins (planned for Part 6).
+- **CI/CD**: Jenkins (`Jenkinsfile`, local controller in `jenkins/`): ruff lint and pytest in parallel, then a DVC pipeline check. Setup steps are in `jenkins/README.md`.
 
 ```
 params.yaml                         all paths and parameters (single source of truth)

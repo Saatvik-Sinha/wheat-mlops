@@ -1,0 +1,15 @@
+services:
+  jenkins:
+    build: .
+    image: wheat-jenkins:0.1.0
+    container_name: wheat-jenkins
+    # 8081 on the host, because 8080 is used by the kubectl port-forward for wheat-api.
+    # Bound to 127.0.0.1 so Jenkins is only reachable from this machine.
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    restart: unless-stopped
+
+volumes:
+  jenkins_home:
