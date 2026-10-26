@@ -6,7 +6,7 @@ MLOps mini-project on the Kaggle *Global Wheat Detection* competition
 ## Pipeline A (MLflow Experimentation & Pipelining)
 - **Data Ingestion**: DVC manages `download_data` (`data/raw`).
 - **Data Preparation & Model Building**: Orchestrated via MLflow pipeline (`src/python/wheat_mlops/pipeline.py`), logging parameters, metrics, and artifacts into MLflow.
-- **CI/CD**: GitHub Actions (planned for Part 6).
+- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`): ruff lint, pytest, Docker build check, and deployment of `frontend/` to GitHub Pages on every push to `pipeline-a`.
 
 ```
 params.yaml                         all paths, parameters, and MLflow config
