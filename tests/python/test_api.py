@@ -182,9 +182,11 @@ def test_yolo_detector_parses_ultralytics_results():
     assert fake.kwargs["conf"] == 0.3 and fake.kwargs["iou"] == 0.6
     assert fake.kwargs["imgsz"] == 640 and fake.kwargs["device"] == "cpu"
 
+
 def test_ngrok_stays_off_without_a_token(monkeypatch):
     monkeypatch.delenv("NGROK_AUTHTOKEN", raising=False)
     assert api.start_ngrok() is None
+
 
 def test_ngrok_failure_does_not_break_the_api(monkeypatch):
     monkeypatch.setenv("NGROK_AUTHTOKEN", "dummy-token")
