@@ -159,6 +159,7 @@ def _decode_image(data: bytes) -> Image.Image:
     # Apply the EXIF rotation, so box coordinates match what a browser shows.
     return ImageOps.exif_transpose(image).convert("RGB")
 
+
 def start_ngrok() -> tuple[str, object] | None:
     """Open an ngrok tunnel to this server if NGROK_AUTHTOKEN is set. Never fails the API."""
     token = os.getenv("NGROK_AUTHTOKEN")
@@ -186,6 +187,7 @@ def stop_ngrok(tunnel: tuple[str, object] | None) -> None:
         from pyngrok import ngrok
 
         ngrok.kill(pyngrok_config=tunnel[1])
+
 
 def create_app(detector: YoloDetector | None = None) -> FastAPI:
     metrics = Metrics()
