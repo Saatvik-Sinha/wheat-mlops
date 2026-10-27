@@ -75,6 +75,7 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
+          target: runtime
           build-args: PYTHON_VERSION=${{ env.PYTHON_VERSION }}
           tags: wheat-mlops:ci
           push: false
