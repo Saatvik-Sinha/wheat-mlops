@@ -126,6 +126,7 @@ class YoloDetector:
         from ultralytics import YOLO
 
         path = Path(os.getenv("MODEL_PATH", "/app/models/best.pt"))
+        print("Model Path", path)
         if not path.is_file():
             raise FileNotFoundError(f"model file not found: {path}")
         torch.set_num_threads(int(os.getenv("INFERENCE_THREADS", "2")))
@@ -137,8 +138,9 @@ class YoloDetector:
     def detect(self, image: Image.Image, conf: float, iou: float) -> list[tuple]:
         """Return a list of (x1, y1, x2, y2, score) in the coordinates of ``image``."""
         with self._lock:
+            print("Predict Called")
             result = self.model.predict(
-                image, imgsz=self.imgsz, conf=conf, iou=iou, device="cpu", verbose=False
+                image, imgsz=self.imgsz, device="cpu", verbose=False, conf=conf, iou=iou
             )[0]
         xyxy = result.boxes.xyxy.cpu().numpy()
         scores = result.boxes.conf.cpu().numpy()
