@@ -100,6 +100,10 @@ def _log_epoch_metrics_from_csv(csv_path: Path) -> None:
                 key = raw_key.strip()
                 if key == "epoch":
                     continue
+                # Ultralytics names detection metrics with a (B) suffix, while
+                # MLflow rejects parentheses in metric names. Match the naming
+                # used by Ultralytics' own MLflow callback.
+                key = key.replace("(", "").replace(")", "")
                 try:
                     metrics[key] = float(raw_val)
                 except (ValueError, TypeError):
@@ -126,6 +130,7 @@ def train(
         register_model: If True, register best.pt in the MLflow Model Registry.
     """
     import mlflow
+    import mlflow.pytorch
     import torch
     from ultralytics import YOLO, settings
     from ultralytics import __version__ as ultralytics_version
@@ -262,8 +267,16 @@ def train(
 
         # --- register the model --------------------------------------------------
         if register_model:
-            model_uri = f"runs:/{run_id}/weights/best.pt"
-            mv = mlflow.register_model(model_uri=model_uri, name=MLFLOW_REGISTERED_MODEL)
+            # MLflow 3 registers logged MLflow Models, not arbitrary run artifacts.
+            checkpoint_model = YOLO(str(run_out_dir / "best.pt")).model
+            model_info = mlflow.pytorch.log_model(
+                pytorch_model=checkpoint_model,
+                name="wheat-yolo-checkpoint",
+            )
+            mv = mlflow.register_model(
+                model_uri=model_info.model_uri,
+                name=MLFLOW_REGISTERED_MODEL,
+            )
             mlflow.set_tag("registered_model_version", mv.version)
             print(f"Registered '{MLFLOW_REGISTERED_MODEL}' version {mv.version}")
 
