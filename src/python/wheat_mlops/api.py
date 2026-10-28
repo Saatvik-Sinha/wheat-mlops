@@ -172,11 +172,14 @@ def start_ngrok() -> tuple[str, object] | None:
         from pyngrok.conf import PyngrokConfig
 
         # /tmp is writable for the non-root container user; pyngrok downloads the binary there.
-        config = PyngrokConfig(ngrok_path="/tmp/ngrok/ngrok", auth_token=token)
+        config = PyngrokConfig(auth_token=token, config_version="3")
         domain = os.getenv("NGROK_DOMAIN")
-        options = {"domain": domain} if domain else {}
-        port = int(os.getenv("PORT", "8000"))
-        url = ngrok.connect(port, "http", pyngrok_config=config, **options).public_url
+        port = int(os.getenv("PORT", "8080"))
+        options = {
+            "upstream": {"url": f"http://localhost:{port}"},
+            "url": f"https://{domain}",
+        }
+        url = ngrok.connect(pyngrok_config=config, **options).public_url
         print(f"ngrok tunnel open: {url}")
         return url, config
     except Exception as exc:  # noqa: BLE001 - the API must keep running without the tunnel
