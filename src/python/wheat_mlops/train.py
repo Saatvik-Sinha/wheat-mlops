@@ -80,45 +80,44 @@ def train(data_yaml: str | Path, out_dir: str | Path, cfg: dict) -> dict:
     from ultralytics import YOLO, settings
     from ultralytics import __version__ as ultralytics_version
 
-    # Part 7 only produces files; experiment tracking is added later by the pipeline owners.
     os.environ.setdefault("WANDB_MODE", "disabled")
     try:
         settings.update({"wandb": False})
     except Exception as exc:  # noqa: BLE001
         print(f"note: could not switch off Ultralytics logger integrations: {exc}")
 
-    out_dir = Path(out_dir).resolve()  # absolute, or Ultralytics nests it under runs/detect
-    out_dir.mkdir(parents=True, exist_ok=True)
+    run_out_dir = Path(out_dir).resolve()
+    run_out_dir.mkdir(parents=True, exist_ok=True)
     args = dict(cfg["args"])
     on_gpu = torch.cuda.is_available()
     if not on_gpu:
         print("WARNING: no GPU found - training on CPU will be extremely slow.")
 
-    data = resolve_dataset_yaml(data_yaml, out_dir)
+    data = resolve_dataset_yaml(data_yaml, run_out_dir)
     started = time.time()
     YOLO(cfg["model"]).train(
-        data=str(data), project=str(out_dir), name="run", exist_ok=True, **args
+        data=str(data), project=str(run_out_dir), name="run", exist_ok=True, **args
     )
     train_minutes = (time.time() - started) / 60
 
-    run_dir = out_dir / "run"
+    run_dir = run_out_dir / "run"
     best = run_dir / "weights" / "best.pt"
     if not best.is_file():
         raise FileNotFoundError(f"training finished but {best} does not exist")
-    shutil.copy2(best, out_dir / "best.pt")
+    shutil.copy2(best, run_out_dir / "best.pt")
     if (run_dir / "results.csv").is_file():
-        shutil.copy2(run_dir / "results.csv", out_dir / "results.csv")
+        shutil.copy2(run_dir / "results.csv", run_out_dir / "results.csv")
     stats_file = Path(data_yaml).parent / "prepare_stats.json"
     if stats_file.is_file():
-        shutil.copy2(stats_file, out_dir / "prepare_stats.json")
+        shutil.copy2(stats_file, run_out_dir / "prepare_stats.json")
 
     batch = args.get("batch", 16)
-    val = YOLO(str(best)).val(
+    val = YOLO(str(run_out_dir / "best.pt")).val(
         data=str(data),
         imgsz=args.get("imgsz", 640),
         batch=batch if isinstance(batch, int) and batch > 0 else 16,
-        plots=False,
-        project=str(out_dir),
+        plots=True,
+        project=str(run_out_dir),
         name="val",
         exist_ok=True,
     )
@@ -129,13 +128,14 @@ def train(data_yaml: str | Path, out_dir: str | Path, cfg: dict) -> dict:
         "model": cfg["model"],
         "args": args,
         "best_checkpoint": "best.pt",
-        "best_checkpoint_mb": round((out_dir / "best.pt").stat().st_size / 1e6, 2),
+        "best_checkpoint_mb": round((run_out_dir / "best.pt").stat().st_size / 1e6, 2),
         "device": torch.cuda.get_device_name(0) if on_gpu else "cpu",
         "ultralytics": ultralytics_version,
         "torch": torch.__version__,
         "python": platform.python_version(),
     }
-    (out_dir / "metrics.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    report["run_dir"] = str(run_out_dir)
+    (run_out_dir / "metrics.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     return report
 
 
