@@ -1,0 +1,16 @@
+# Training configuration. Read by src/python/wheat_mlops/train.py (runs on Kaggle/Colab).
+# Kept separate from params.yaml on purpose: that file is edited by several people.
+train:
+  model: yolov8s.pt        # downloaded automatically (the notebook needs internet on)
+  args:                    # passed 1:1 to ultralytics `model.train(...)`
+    epochs: 50
+    imgsz: 640             # keep equal to model.imgsz in params.yaml (used for serving)
+    batch: 16
+    patience: 15           # stop early if val fitness does not improve for 15 epochs
+    seed: 42
+    workers: 0
+    cache: ram
+    flipud: 0.5            # wheat photos are top-down, so vertical flips are valid
+    fliplr: 0.5
+    mixup: 0.1
+    close_mosaic: 10
