@@ -5,6 +5,8 @@ Standalone on purpose: it imports nothing from the rest of the package.
 Run:  uvicorn wheat_mlops.api:app --host 0.0.0.0 --port 8000
 Env:  MODEL_PATH         default /app/models/best.pt
       MODEL_VERSION      label used in /health and the Prometheus metrics
+      MLFLOW_TRACKING_URI MLflow tracking server URI (default sqlite:///mlflow.db)
+      MLFLOW_EXPERIMENT_NAME experiment used for API prediction traces
       IMGSZ              inference size, default 640 (match training)
       INFERENCE_THREADS  torch CPU threads, default 2
       CORS_ORIGINS       comma-separated origins, default "*"
@@ -43,6 +45,7 @@ DETECTION_BUCKETS = (0, 1, 5, 10, 20, 30, 50, 75, 100, 150)
 CONFIDENCE_BUCKETS = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0)
 UNTRACKED_PATHS = {"/metrics", "/health", "/docs", "/redoc", "/openapi.json"}
 MAX_PIXELS = 25_000_000
+MLFLOW_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT_NAME", "wheat-api")
 
 
 class ApiError(Exception):
@@ -195,6 +198,13 @@ def stop_ngrok(tunnel: tuple[str, object] | None) -> None:
 
 
 def create_app(detector: YoloDetector | None = None) -> FastAPI:
+    # Use the same MLflow backend as the UI. For an API running in another
+    # container, set MLFLOW_TRACKING_URI to a reachable MLflow tracking server.
+    import mlflow
+
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db"))
+    mlflow.set_experiment(MLFLOW_EXPERIMENT)
+
     metrics = Metrics()
     model_version = os.getenv("MODEL_VERSION", "unversioned")
     max_bytes = int(os.getenv("MAX_UPLOAD_MB", "10")) * 1024 * 1024
@@ -264,33 +274,65 @@ def create_app(detector: YoloDetector | None = None) -> FastAPI:
         conf: Annotated[float, Query(ge=0.01, le=0.99)] = 0.25,
         iou: Annotated[float, Query(ge=0.1, le=0.95)] = 0.7,
     ):
-        active = request.app.state.detector
-        if active is None:
-            raise ApiError(503, "model_unavailable", "the model is not loaded yet")
-        data = file.file.read(max_bytes + 1)
-        if len(data) > max_bytes:
-            raise ApiError(413, "file_too_large", f"file is larger than {max_bytes // 2**20} MB")
-        image = _decode_image(data)
+        # Do not record the uploaded image or request object in MLflow. The trace
+        # contains only safe request metadata, inference timing, and result summary.
+        with mlflow.start_span("wheat.predict", span_type="CHAIN") as trace:
+            trace.set_inputs({"confidence_threshold": conf, "iou_threshold": iou})
+            active = request.app.state.detector
+            if active is None:
+                raise ApiError(503, "model_unavailable", "the model is not loaded yet")
+            data = file.file.read(max_bytes + 1)
+            if len(data) > max_bytes:
+                raise ApiError(
+                    413, "file_too_large", f"file is larger than {max_bytes // 2**20} MB"
+                )
 
-        start = time.perf_counter()
-        boxes = active.detect(image, conf, iou)
-        inference_ms = (time.perf_counter() - start) * 1000
+            with mlflow.start_span("decode_image", span_type="PARSER") as decode_span:
+                image = _decode_image(data)
+                decode_span.set_inputs({"content_length": len(data)})
+                decode_span.set_outputs(
+                    {"image_width": image.width, "image_height": image.height}
+                )
 
-        scores = [b[4] for b in boxes]
-        metrics.detections.labels(model_version).observe(len(boxes))
-        for score in scores:
-            metrics.confidence.labels(model_version).observe(score)
-        return PredictResponse(
-            count=len(boxes),
-            mean_confidence=sum(scores) / len(scores) if scores else None,
-            detections=[
-                Detection(x1=b[0], y1=b[1], x2=b[2], y2=b[3], confidence=b[4]) for b in boxes
-            ],
-            image_width=image.width,
-            image_height=image.height,
-            inference_ms=round(inference_ms, 1),
-            model_version=model_version,
-        )
+            with mlflow.start_span("yolo_inference", span_type="TOOL") as inference_span:
+                inference_span.set_inputs(
+                    {
+                        "model_version": model_version,
+                        "confidence_threshold": conf,
+                        "iou_threshold": iou,
+                    }
+                )
+                start = time.perf_counter()
+                boxes = active.detect(image, conf, iou)
+                inference_ms = (time.perf_counter() - start) * 1000
+                inference_span.set_outputs(
+                    {"detection_count": len(boxes), "inference_ms": round(inference_ms, 1)}
+                )
+
+            scores = [b[4] for b in boxes]
+            metrics.detections.labels(model_version).observe(len(boxes))
+            for score in scores:
+                metrics.confidence.labels(model_version).observe(score)
+            result = PredictResponse(
+                count=len(boxes),
+                mean_confidence=sum(scores) / len(scores) if scores else None,
+                detections=[
+                    Detection(x1=b[0], y1=b[1], x2=b[2], y2=b[3], confidence=b[4])
+                    for b in boxes
+                ],
+                image_width=image.width,
+                image_height=image.height,
+                inference_ms=round(inference_ms, 1),
+                model_version=model_version,
+            )
+            trace.set_outputs(
+                {
+                    "detection_count": result.count,
+                    "inference_ms": result.inference_ms,
+                    "model_version": result.model_version,
+                }
+            )
+            return result
 
     return app
 
