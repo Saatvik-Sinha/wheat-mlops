@@ -7,6 +7,8 @@ Env:  MODEL_PATH         default /app/models/best.pt
       MODEL_VERSION      label used in /health and the Prometheus metrics
       MLFLOW_TRACKING_URI MLflow tracking server URI (default sqlite:///mlflow.db)
       MLFLOW_EXPERIMENT_NAME experiment used for API prediction traces
+      NGROK_AUTHTOKEN      enable a public ngrok endpoint when set
+      NGROK_DOMAIN         optional reserved ngrok domain
       IMGSZ              inference size, default 640 (match training)
       INFERENCE_THREADS  torch CPU threads, default 2
       CORS_ORIGINS       comma-separated origins, default "*"
@@ -177,11 +179,10 @@ def start_ngrok() -> tuple[str, object] | None:
         # /tmp is writable for the non-root container user; pyngrok downloads the binary there.
         config = PyngrokConfig(auth_token=token, config_version="3")
         domain = os.getenv("NGROK_DOMAIN")
-        port = int(os.getenv("PORT", "8080"))
-        options = {
-            "upstream": {"url": f"http://localhost:{port}"},
-            "url": f"https://{domain}",
-        }
+        port = int(os.getenv("PORT", "8000"))
+        options = {"upstream": {"url": f"http://localhost:{port}"}}
+        if domain:
+            options["url"] = f"https://{domain}"
         url = ngrok.connect(pyngrok_config=config, **options).public_url
         print(f"ngrok tunnel open: {url}")
         return url, config

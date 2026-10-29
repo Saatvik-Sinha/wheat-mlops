@@ -2,14 +2,11 @@
 .dvc
 .venv
 venv
-data
 runs
 mlruns
 checkpoints/base
 checkpoints/pretrained
 checkpoints/trained/*
-**/*.pt
-!checkpoints/trained/best.pt
 *.zip
 **/__pycache__
 .pytest_cache
@@ -17,3 +14,11 @@ checkpoints/trained/*
 k8s
 tests
 .env
+.env.*
+!.env.example
+
+
+!data/
+!data/working/
+!data/working/trained/
+!data/working/trained/best.pt
