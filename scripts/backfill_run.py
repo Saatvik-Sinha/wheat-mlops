@@ -114,9 +114,13 @@ def main() -> None:
         # ---- final / summary metrics --------------------------------------
         # The training process can stop after writing results.csv but before
         # refreshing metrics.json. Prefer the latest CSV epoch in that case.
-        metrics_json_is_stale = RESULTS_CSV.is_file() and BEST_PT.is_file() and (
-            RESULTS_CSV.stat().st_mtime > METRICS_JSON.stat().st_mtime
-            or BEST_PT.stat().st_mtime > METRICS_JSON.stat().st_mtime
+        metrics_json_is_stale = (
+            RESULTS_CSV.is_file()
+            and BEST_PT.is_file()
+            and (
+                RESULTS_CSV.stat().st_mtime > METRICS_JSON.stat().st_mtime
+                or BEST_PT.stat().st_mtime > METRICS_JSON.stat().st_mtime
+            )
         )
         if metrics_json_is_stale:
             summary_metrics = {}
@@ -137,9 +141,7 @@ def main() -> None:
         if not metrics_json_is_stale and report.get("train_minutes") is not None:
             mlflow.log_metric("train_minutes", report["train_minutes"])
         checkpoint_mb = (
-            BEST_PT.stat().st_size / 1e6
-            if BEST_PT.is_file()
-            else report.get("best_checkpoint_mb")
+            BEST_PT.stat().st_size / 1e6 if BEST_PT.is_file() else report.get("best_checkpoint_mb")
         )
         if checkpoint_mb is not None:
             mlflow.log_metric("best_checkpoint_mb", checkpoint_mb)

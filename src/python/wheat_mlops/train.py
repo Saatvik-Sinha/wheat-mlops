@@ -298,8 +298,7 @@ def main() -> None:
     parser.add_argument(
         "--run-name",
         default=None,
-        help="Human-readable name for this run (shown in MLflow UI).  "
-        "Defaults to a timestamp.",
+        help="Human-readable name for this run (shown in MLflow UI).  Defaults to a timestamp.",
     )
     parser.add_argument("--smoke", action="store_true", help="quick 2-epoch sanity run")
     parser.add_argument(
