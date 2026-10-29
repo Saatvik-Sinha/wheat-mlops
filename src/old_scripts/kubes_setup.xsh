@@ -1,6 +1,7 @@
 minikube kubectl -- create secret generic wheat-api-secrets \
   -n wheat-mlops --from-env-file=.env
 
+
 minikube kubectl -- apply -f k8s/
 minikube kubectl -- rollout restart deployment/wheat-api -n wheat-mlops
 
@@ -18,6 +19,7 @@ minikube start --driver=docker --cpus=6 --memory=4096
 minikube image load wheat-mlops:0.2.0
 minikube kubectl -- apply --dry-run=client -f k8s/
 minikube kubectl -- apply -f k8s/
+minikube kubectl -- apply -f monitoring/
 minikube kubectl -- rollout status deployment/wheat-api -n wheat-mlops
 minikube kubectl -- get pods,svc -n wheat-mlops
 
