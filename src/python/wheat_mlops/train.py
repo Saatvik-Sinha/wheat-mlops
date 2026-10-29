@@ -11,7 +11,7 @@ is also registered in the MLflow Model Registry under the name "wheat-yolo".
 
 Usage:
     python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml --out-dir trained [--smoke]
-    python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml 
+    python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml
         --out-dir trained --run-name "exp-lr0.01"
 """
 
@@ -299,8 +299,7 @@ def main() -> None:
     parser.add_argument(
         "--run-name",
         default=None,
-        help="Human-readable name for this run (shown in MLflow UI).  "
-        "Defaults to a timestamp.",
+        help="Human-readable name for this run (shown in MLflow UI).  Defaults to a timestamp.",
     )
     parser.add_argument("--smoke", action="store_true", help="quick 2-epoch sanity run")
     parser.add_argument(

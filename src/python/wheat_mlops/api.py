@@ -291,9 +291,7 @@ def create_app(detector: YoloDetector | None = None) -> FastAPI:
             with mlflow.start_span("decode_image", span_type="PARSER") as decode_span:
                 image = _decode_image(data)
                 decode_span.set_inputs({"content_length": len(data)})
-                decode_span.set_outputs(
-                    {"image_width": image.width, "image_height": image.height}
-                )
+                decode_span.set_outputs({"image_width": image.width, "image_height": image.height})
 
             with mlflow.start_span("yolo_inference", span_type="TOOL") as inference_span:
                 inference_span.set_inputs(
@@ -318,8 +316,7 @@ def create_app(detector: YoloDetector | None = None) -> FastAPI:
                 count=len(boxes),
                 mean_confidence=sum(scores) / len(scores) if scores else None,
                 detections=[
-                    Detection(x1=b[0], y1=b[1], x2=b[2], y2=b[3], confidence=b[4])
-                    for b in boxes
+                    Detection(x1=b[0], y1=b[1], x2=b[2], y2=b[3], confidence=b[4]) for b in boxes
                 ],
                 image_width=image.width,
                 image_height=image.height,
