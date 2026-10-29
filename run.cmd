@@ -1,0 +1,1 @@
+python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml --out-dir data/working/trained --params ./improve_params.yaml
