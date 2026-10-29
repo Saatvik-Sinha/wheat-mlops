@@ -11,7 +11,10 @@ minikube kubectl -- rollout restart deployment/wheat-api -n wheat-mlops
 # docker build --no-cache -f docker/Dockerfile -t wheat-mlops:0.1.0 .
 docker build -f docker/Dockerfile -t wheat-mlops:0.2.0 .
 
-minikube start --driver=docker --cpus=2 --memory=2048
+
+minikube config set memory 4096
+# minikube stop
+minikube start --driver=docker --cpus=6 --memory=4096
 minikube image load wheat-mlops:0.2.0
 minikube kubectl -- apply --dry-run=client -f k8s/
 minikube kubectl -- apply -f k8s/
