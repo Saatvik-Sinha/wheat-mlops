@@ -2,7 +2,7 @@
 #
 # Project image (CPU only - training happens on Kaggle/Colab, never here).
 # Build from the repo root:
-#   docker build -f docker/Dockerfile -t wheat-mlops:0.1.0 --build-arg PYTHON_VERSION=3.12 .
+#   docker build -f docker/Dockerfile -t wheat-mlops:0.1.0 --build-arg PYTHON_VERSION=3.14 .
 #
 # PYTHON_VERSION must satisfy `requires-python` in pyproject.toml.
 # TORCH_VARIANT=cpu  -> CPU-only torch wheels (small image, default)
