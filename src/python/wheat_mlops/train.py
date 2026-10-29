@@ -11,7 +11,8 @@ is also registered in the MLflow Model Registry under the name "wheat-yolo".
 
 Usage:
     python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml --out-dir trained [--smoke]
-    python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml --out-dir trained --run-name "exp-lr0.01"
+    python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml
+        --out-dir trained --run-name "exp-lr0.01"
 """
 
 from __future__ import annotations
