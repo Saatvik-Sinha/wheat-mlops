@@ -5,6 +5,8 @@ Standalone on purpose: it imports nothing from the rest of the package.
 Run:  uvicorn wheat_mlops.api:app --host 0.0.0.0 --port 8000
 Env:  MODEL_PATH         default /app/models/best.pt
       MODEL_VERSION      label used in /health and the Prometheus metrics
+      NGROK_AUTHTOKEN      enable a public ngrok endpoint when set
+      NGROK_DOMAIN         optional reserved ngrok domain
       IMGSZ              inference size, default 640 (match training)
       INFERENCE_THREADS  torch CPU threads, default 2
       CORS_ORIGINS       comma-separated origins, default "*"
@@ -174,11 +176,10 @@ def start_ngrok() -> tuple[str, object] | None:
         # /tmp is writable for the non-root container user; pyngrok downloads the binary there.
         config = PyngrokConfig(auth_token=token, config_version="3")
         domain = os.getenv("NGROK_DOMAIN")
-        port = int(os.getenv("PORT", "8080"))
-        options = {
-            "upstream": {"url": f"http://localhost:{port}"},
-            "url": f"https://{domain}",
-        }
+        port = int(os.getenv("PORT", "8000"))
+        options = {"upstream": {"url": f"http://localhost:{port}"}}
+        if domain:
+            options["url"] = f"https://{domain}"
         url = ngrok.connect(pyngrok_config=config, **options).public_url
         print(f"ngrok tunnel open: {url}")
         return url, config
