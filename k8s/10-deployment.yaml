@@ -35,6 +35,18 @@ spec:
               value: "2"
             - name: CORS_ORIGINS
               value: "*"
+            - name: NGROK_AUTHTOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: wheat-api-secrets
+                  key: NGROK_AUTHTOKEN
+                  optional: true
+            - name: NGROK_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: wheat-api-secrets
+                  key: NGROK_DOMAIN
+                  optional: true
           startupProbe:            # the model takes a while to load on a slow CPU
             httpGet:
               path: /health
@@ -57,7 +69,7 @@ spec:
               memory: 512Mi
             limits:
               cpu: "2"
-              memory: 1536Mi
+              memory: 3Gi
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001

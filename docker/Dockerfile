@@ -7,7 +7,7 @@
 # PYTHON_VERSION must satisfy `requires-python` in pyproject.toml.
 # TORCH_VARIANT=cpu  -> CPU-only torch wheels (small image, default)
 # TORCH_VARIANT=default -> exactly what uv.lock says (large: pulls CUDA libraries)
-ARG PYTHON_VERSION=3.12
+ARG PYTHON_VERSION=3.14
 
 # ---------- builder: resolve and install dependencies into /opt/venv ----------
 FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
@@ -21,7 +21,7 @@ WORKDIR /build
 COPY pyproject.toml uv.lock README.md ./
 
 # 1) Third-party dependencies only. This layer is cached until pyproject/uv.lock change.
-RUN uv venv /opt/venv \
+RUN uv venv --python ${PYTHON_VERSION} /opt/venv \
  && uv export --frozen --no-dev --no-hashes --no-emit-project -o requirements.txt \
  && if [ "$TORCH_VARIANT" = "cpu" ]; then \
         grep -vE '^(nvidia-|triton)' requirements.txt > requirements.cpu.txt \
@@ -64,7 +64,7 @@ CMD ["python", "smoke_test.py"]
 
 # ---------- serve: runtime + API + the trained model ----------
 FROM runtime AS serve
-COPY checkpoints/trained/best.pt /app/models/best.pt
+COPY data/working/trained/best.pt /app/models/best.pt
 ENV MODEL_PATH=/app/models/best.pt
 EXPOSE 8000
 CMD ["uvicorn", "wheat_mlops.api:app", "--host", "0.0.0.0", "--port", "8000"]

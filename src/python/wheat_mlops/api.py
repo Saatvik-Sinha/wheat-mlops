@@ -5,6 +5,8 @@ Standalone on purpose: it imports nothing from the rest of the package.
 Run:  uvicorn wheat_mlops.api:app --host 0.0.0.0 --port 8000
 Env:  MODEL_PATH         default /app/models/best.pt
       MODEL_VERSION      label used in /health and the Prometheus metrics
+      NGROK_AUTHTOKEN      enable a public ngrok endpoint when set
+      NGROK_DOMAIN         optional reserved ngrok domain
       IMGSZ              inference size, default 640 (match training)
       INFERENCE_THREADS  torch CPU threads, default 2
       CORS_ORIGINS       comma-separated origins, default "*"
@@ -126,6 +128,7 @@ class YoloDetector:
         from ultralytics import YOLO
 
         path = Path(os.getenv("MODEL_PATH", "/app/models/best.pt"))
+        print("Model Path", path)
         if not path.is_file():
             raise FileNotFoundError(f"model file not found: {path}")
         torch.set_num_threads(int(os.getenv("INFERENCE_THREADS", "2")))
@@ -137,8 +140,9 @@ class YoloDetector:
     def detect(self, image: Image.Image, conf: float, iou: float) -> list[tuple]:
         """Return a list of (x1, y1, x2, y2, score) in the coordinates of ``image``."""
         with self._lock:
+            print("Predict Called")
             result = self.model.predict(
-                image, imgsz=self.imgsz, conf=conf, iou=iou, device="cpu", verbose=False
+                image, imgsz=self.imgsz, device="cpu", verbose=False, conf=conf, iou=iou
             )[0]
         xyxy = result.boxes.xyxy.cpu().numpy()
         scores = result.boxes.conf.cpu().numpy()
@@ -170,11 +174,13 @@ def start_ngrok() -> tuple[str, object] | None:
         from pyngrok.conf import PyngrokConfig
 
         # /tmp is writable for the non-root container user; pyngrok downloads the binary there.
-        config = PyngrokConfig(ngrok_path="/tmp/ngrok/ngrok", auth_token=token)
+        config = PyngrokConfig(auth_token=token, config_version="3")
         domain = os.getenv("NGROK_DOMAIN")
-        options = {"domain": domain} if domain else {}
         port = int(os.getenv("PORT", "8000"))
-        url = ngrok.connect(port, "http", pyngrok_config=config, **options).public_url
+        options = {"upstream": {"url": f"http://localhost:{port}"}}
+        if domain:
+            options["url"] = f"https://{domain}"
+        url = ngrok.connect(pyngrok_config=config, **options).public_url
         print(f"ngrok tunnel open: {url}")
         return url, config
     except Exception as exc:  # noqa: BLE001 - the API must keep running without the tunnel

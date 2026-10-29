@@ -17,6 +17,7 @@ src/python/wheat_mlops/             installable Python package
  - prepare_data.py                  data/raw -> data/processed (YOLO format, stratified split)
  - build_model.py                   pretrained YOLO -> checkpoints/base/yolov8n_base.pt
 src/scripts/                        development test and lint scripts
+src/old_scripts/                    setup scripts, not for running, for record.
 tests/python/                       isolated test suite (no real data/checkpoints needed)
 ```
 

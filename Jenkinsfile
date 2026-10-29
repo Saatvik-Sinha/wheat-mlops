@@ -1,5 +1,4 @@
 // Pipeline B CI (Part 6B): lint + test in parallel, then validate the DVC pipeline.
-// Pipeline A does the same checks with GitHub Actions (.github/workflows/ci.yml on pipeline-a).
 // Runs on the local Jenkins from jenkins/ (see jenkins/README.md), which has uv preinstalled.
 pipeline {
     agent any

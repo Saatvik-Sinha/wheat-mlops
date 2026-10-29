@@ -11,8 +11,9 @@ venv/
 # (Patterns are chosen so that the small pointer files DVC creates, e.g. data/raw.dvc,
 #  are NOT ignored.)
 data/raw/
-data/processed/
+data/
 *.pt
+/improve_params.yaml
 checkpoints/**/*.json
 !checkpoints/**/model_info.json
 runs/
