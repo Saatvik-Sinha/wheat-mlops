@@ -1,7 +1,7 @@
 """Download the Kaggle competition data into data/raw (idempotent).
 
-Requires the Kaggle CLI to be authenticated and the competition rules to be accepted
-on the Kaggle website (click "Join Competition" once).
+Loads ``KAGGLE_API_TOKEN`` from the repository-root ``.env`` file before invoking the Kaggle
+CLI. The competition rules must also be accepted on Kaggle (click "Join Competition" once).
 
 Usage:  python -m wheat_mlops.download_data [--force]
 """
@@ -14,6 +14,8 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 from wheat_mlops.config import load_params
 
@@ -31,7 +33,7 @@ def download(competition: str, raw_dir: str | Path, force: bool = False) -> None
     if shutil.which("kaggle") is None:
         sys.exit(
             "The `kaggle` command was not found. Activate your virtualenv and run "
-            "`pip install -r requirements.txt`, then set up your Kaggle API credentials."
+            "install the project dependencies, then set KAGGLE_API_TOKEN in the repository .env."
         )
 
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -59,6 +61,10 @@ def download(competition: str, raw_dir: str | Path, force: bool = False) -> None
 
 
 def main() -> None:
+    # DVC runs from the repository root, but locate the project .env explicitly so this
+    # also works when the command is launched from another working directory.
+    load_dotenv(Path(__file__).resolve().parents[3] / ".env")
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force", action="store_true", help="download again even if present")
     args = parser.parse_args()
