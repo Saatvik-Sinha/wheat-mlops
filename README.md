@@ -1,16 +1,14 @@
-# wheat-mlops: Pipeline A
+# wheat-mlops: Pipeline B
 
 An end-to-end MLOps pipeline for **wheat head detection** on the Kaggle
 [Global Wheat Detection](https://www.kaggle.com/competitions/global-wheat-detection) dataset,
-using an Ultralytics YOLOv8 model. This branch is **Pipeline A** (DVC + MLflow + GitHub Actions).
-The sister branch [`pipeline-b`](../../tree/pipeline-b) does the same with DVC-only experiment
-tracking and Jenkins, so the two approaches can be compared.
+using an Ultralytics YOLOv8 model. This branch is **Pipeline B** (DVC + Jenkins).
 
 | | Link |
 |---|---|
-| Repository | https://github.com/Saatvik-Sinha/wheat-mlops (branch `pipeline-a`) |
+| Repository | https://github.com/Saatvik-Sinha/wheat-mlops (branch `pipeline-b`) |
 | Live frontend (GitHub Pages) | https://saatvik-sinha.github.io/wheat-mlops/ |
-| CI/CD runs | [Actions tab](/.github/workflows/ci.yml) |
+| CI/CD | `Jenkinsfile` (run by the local Jenkins controller) |
 
 ---
 
@@ -20,7 +18,7 @@ tracking and Jenkins, so the two approaches can be compared.
 3. [Repository layout](#3-repository-layout)
 4. [Prerequisites](#4-prerequisites)
 5. [Step-by-step reproduction](#5-step-by-step-reproduction)
-6. [CI/CD with GitHub Actions](#6-cicd-with-github-actions)
+6. [CI/CD with Jenkins](#6-cicd-with-jenkins)
 7. [Results and metrics](#7-results-and-metrics)
 8. [Troubleshooting](#8-troubleshooting)
 9. [Clean up](#9-clean-up)
@@ -40,10 +38,10 @@ boxes in `train.csv` (`image_id, width, height, bbox=[x, y, w, h], source`).
 
 **Aim.** The goal is not the leaderboard. It is to build a **reproducible, automated pipeline**
 around a reasonable detector:
-- Version the data, and track every data preparation and training run with its parameters, metrics and artifacts;
+- Version the data, and reproduce data preparation and model-building stages with DVC;
 - Serve the trained model behind an API, packaged in a container and deployed on Kubernetes;
 - Monitor the live service (traffic, latency, errors, detection quality);
-- Test and deploy automatically on every change (CI/CD);
+- Test changes automatically with Jenkins CI/CD;
 - Make the result usable through a simple web frontend.
 
 ---
@@ -52,14 +50,12 @@ around a reasonable detector:
 
 | # | Tool | What it does in this project | Where |
 |---|---|---|---|
-| 1 | **DVC** | Versions the raw dataset (`download_data` stage) | `dvc.yaml`, `dvc.lock`, `.dvc/` |
-| 2 | **MLflow** | Tracks data preparation, model build, training runs, model registry (`wheat-yolo`) and API prediction traces | `MLproject`, `pipeline.py`, `train.py`, `api.py` |
-| 3 | **Docker** | Packages the API and trained model into an image | `docker/Dockerfile` |
-| 4 | **Kubernetes** (minikube) | Runs the API as a Deployment and Service with health probes and resource limits | `k8s/` |
-| 5 | **Prometheus** | Scrapes `/metrics` from the API, evaluates alert rules | `monitoring/1*-prometheus*.yaml` |
-| 6 | **Grafana** | Dashboard for traffic, p50/p95 latency, error rate, detections and confidence | `monitoring/2*-grafana*.yaml`, `monitoring/dashboards/` |
-| 7 | **GitHub Actions** | CI/CD on `pipeline-a`: lint, test, Docker build, deploy frontend to GitHub Pages | `.github/workflows/ci.yml` |
-| 8 | **Jenkins** | The same CI on `pipeline-b` (lint, test, DVC check) | `Jenkinsfile`, `jenkins/` on branch `pipeline-b` |
+| 1 | **DVC** | Reproduces raw-data download, data preparation and base-model build stages | `dvc.yaml`, `dvc.lock`, `.dvc/` |
+| 2 | **Docker** | Packages the API and trained model into an image | `docker/Dockerfile` |
+| 3 | **Kubernetes** (minikube) | Runs the API as a Deployment and Service with health probes and resource limits | `k8s/` |
+| 4 | **Prometheus** | Scrapes `/metrics` from the API, evaluates alert rules | `monitoring/1*-prometheus*.yaml` |
+| 5 | **Grafana** | Dashboard for traffic, p50/p95 latency, error rate, detections and confidence | `monitoring/2*-grafana*.yaml`, `monitoring/dashboards/` |
+| 6 | **Jenkins** | Runs lint, tests and a DVC pipeline check | `Jenkinsfile`, `jenkins/` |
 
 Supporting tools: **uv** (Python environments), **pytest** and **ruff** (tests and lint),
 **FastAPI** (API), **ngrok** (public URL for the local API), **Kaggle GPU notebooks** (training), **docker**, **minikube**, **kubectl**.
@@ -69,15 +65,12 @@ flowchart LR
     K[(Kaggle dataset)] -->|kaggle API| DVC[DVC<br/>download_data<br/>data/raw]
     DVC --> PREP[prepare_data<br/>YOLO labels, stratified split]
     PREP --> TRAIN[train.py on <br/>YOLOv8s]
-    PREP -.->|"params, data stats"| ML[(MLflow<br/>runs, metrics, artifacts,<br/>model registry)]
     TRAIN -.->|"metrics, plots, best.pt"| ML
     TRAIN -->|best.pt| DOCKER[Docker image<br/>wheat-mlops:0.2.0]
     DOCKER -->|minikube image load| K8S[Kubernetes<br/>wheat-api Deployment]
     K8S -->|/metrics| PROM[Prometheus]
     PROM --> GRAF[Grafana dashboard]
     K8S -.->|"prediction traces"| ML
-    FE[Frontend<br/>GitHub Pages] -->|POST /predict<br/>localhost or ngrok| K8S
-    GIT[git push / PR] --> GHA[GitHub Actions<br/>lint, test, docker build]
     GHA -->|deploy| FE
     GIT --> JEN[Jenkins<br/>pipeline-b]
 ```
@@ -90,21 +83,21 @@ flowchart LR
 params.yaml                 single source of truth for paths and data/model parameters
 train_params.yaml           training hyper-parameters (Fresh YOLOv8s, 50 epochs, augmentations)
 improve_params.yaml         finetuning hyper-parameters (last checkpoint, 5 epochs, augmentations)
-dvc.yaml, dvc.lock          DVC stage that downloads the raw data
-MLproject                   MLflow project entry points (main, prepare_data, build_model)
+dvc.yaml, dvc.lock          DVC stages for download, preparation and base-model build
+train_params.yaml           training hyper-parameters (YOLOv8s, 50 epochs, augmentations)
 src/python/wheat_mlops/     the Python package
   download_data.py            Kaggle download -> data/raw
   prepare_data.py             data/raw -> data/processed (YOLO format, stratified train/val split)
   build_model.py              pretrained YOLO -> checkpoints/base (smoke inference)
-  pipeline.py                 MLflow pipeline runner (prepare + build in one tracked run)
-  train.py                    training script, logs to MLflow and registers the model
+  train.py                    training script, saves checkpoints, metrics and plots locally
   api.py                      FastAPI service: /predict, /health, /metrics
 src/notebooks/kaggle_train.ipynb   training notebook for a Kaggle GPU session
 docker/                     Dockerfile (builder / runtime / serve stages) and smoke test
 k8s/                        Namespace, Deployment, Service, smoke-test Job
 monitoring/                 Prometheus and Grafana manifests and dashboard JSON
 frontend/index.html         static web UI (deployed to GitHub Pages)
-.github/workflows/ci.yml    GitHub Actions CI/CD
+Jenkinsfile                 Jenkins CI pipeline
+jenkins/                    Jenkins controller setup
 tests/python/               test suite (needs no real data, model or GPU)
 src/scripts/                launch scripts for local deployment
 src/old_scripts/            helper scripts used during development and setup
@@ -140,18 +133,17 @@ and in Windows PowerShell unless noted.
 ```bash
 git clone https://github.com/Saatvik-Sinha/wheat-mlops.git
 cd wheat-mlops
-git checkout pipeline-a
+git checkout pipeline-b
 uv venv --python 3.14
-source .venv/Scripts/activate
 uv sync --all-groups
 ```
 
 `uv sync` creates `.venv/` with Python 3.14 and every dependency from `uv.lock`
-(DVC, MLflow, Ultralytics, pytest, ruff, ...). Prefix commands with `uv run` to use it.
+(DVC, Ultralytics, pytest, ruff, ...). Prefix commands with `uv run` to use it.
 
 > On Linux, `uv.lock` resolves the CUDA build of PyTorch (about 3 GB). Nothing here needs CUDA
 > locally, so you can skip it by installing CPU wheels; the same approach is used in
-> `docker/Dockerfile` and `.github/workflows/ci.yml`.
+> `docker/Dockerfile` and `Jenkinsfile`.
 
 Check that everything works (no data needed):
 
@@ -161,7 +153,7 @@ uv run ruff format --check .
 uv run --with fastapi --with httpx --with prometheus-client --with python-multipart pytest
 ```
 
-### Step 1: Get the data (Kaggle + DVC)
+### Step 1: Get the data (Kaggle)
 
 1. Open the [competition page](https://www.kaggle.com/competitions/global-wheat-detection) and
    click **Join Competition / I Understand and Accept** (the download is refused otherwise).
@@ -174,31 +166,13 @@ uv run --with fastapi --with httpx --with prometheus-client --with python-multip
 uv run dvc repro
 ```
 
-This downloads and unzips the data into `data/raw/` (`train.csv`, `train/*.jpg`, `test/*.jpg`). Running it again does nothing while the data is unchanged.
+`dvc repro` runs the stages in `dvc.yaml` in order. `download_data` downloads and unzips the
+competition data into `data/raw/`; `prepare_data` converts the boxes to YOLO labels and creates a
+stratified train/validation split in `data/processed/`; `build_model` downloads the pretrained
+YOLOv8n checkpoint, smoke-checks it, and saves `checkpoints/base/yolov8n_base.pt`. Running it
+again skips stages whose dependencies have not changed.
 
-### Step 2: Prepare data and build the base model (MLflow pipeline)
-
-```bash
-uv run python -m wheat_mlops.pipeline
-```
-
-One MLflow run (experiment `wheat-mlops-pipeline-a`) that:
-**prepare_data**: converts `train.csv` boxes to YOLO labels, drops boxes outside
-   `min_box_area`/`max_box_area`, and makes a train/val split (80/20) stratified by source and
-   by boxes per image. Output: `data/processed/` with `dataset.yaml`.
-
-Parameters, data statistics and artifacts are logged to `mlflow.db`. The same entry points are
-also declared as an MLflow Project in `MLproject`.
-
-Open the MLflow UI:
-
-```bash
-uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
-```
-
-Open http://localhost:5000 to see the experiments `wheat-mlops-pipeline-a` (this step),
-`wheat-train` (training) and `wheat-api` (prediction traces), plus the **Models** tab with
-`wheat-yolo`.
+The stage parameters and outputs are recorded by DVC in `dvc.yaml` and `dvc.lock`.
 
 ### Step 3: Train the model (local)
 
@@ -210,10 +184,7 @@ Training does not need a GPU, so that model can easily run on local machine with
 2. In order to continue training on the previuosly fintuned model, run the following command. 
 `python -m wheat_mlops.train --data-yaml data/processed/dataset.yaml --out-dir data/working/trained --params ./improve_params.yaml`
 
-3. All the training statistics and model artifacts will be saved in MLFlow database.
-
-4. To view the results run the following commands to open the dashboards
-`./src/old_scripts/start_mlflow_ui.sh`
+3. All the training statistics and model artifacts will be saved locally in `data/working/`.
 
 ### Step 4: Build and run the API with Docker
 
@@ -267,15 +238,22 @@ minikube kubectl -- rollout status deployment/wheat-api -n "$NAMESPACE" --timeou
 ```
 
 The pod is ready when `/health` passes; the startup probe allows up to 3 minutes for the model
-to load. Open the API on your machine:
+to load. Open the API on your machine in one terminal:
 
 ```bash
-echo 'Starting local port forwards...'
 minikube kubectl -- port-forward -n "$NAMESPACE" svc/wheat-api 8000:80
+```
+
+In another terminal, start the public tunnel:
+
+```bash
 ngrok http 8000 --url=https://oxychloric-carma-subgelatinously.ngrok-free.dev
 ```
 
-`http://localhost:8080/health` should answer. Leave this terminal open.
+`http://localhost:8000/health` should answer. Leave both terminals open. To perform the clean
+build, deployment, port forwards and public health check in one command instead, run
+`./src/scripts/start_everything.sh` from the repository root in place of the manual deployment and
+monitoring commands in steps 5 and 6.
 
 Optional in-cluster smoke test:
 
@@ -333,28 +311,36 @@ A page will ask for a backend url, in the text field paste the following url - `
 
 Upload a wheat image (for example from `data/raw/test/`), set the confidence threshold and click
 **Detect**. The boxes are drawn on the image with the count and mean confidence. Every request
-also shows up in Grafana and as a trace in MLflow.
+also shows up in Grafana.
 
 ---
 
-## 6. CI/CD with GitHub Actions
+## 6. CI/CD with Jenkins
 
-Workflow: `.github/workflows/ci.yml`, triggered on every push and pull request to `pipeline-a`
-(and manually from the Actions tab).
+Jenkins runs the root `Jenkinsfile`. It polls the repository every five minutes because GitHub
+webhooks cannot reach a Jenkins controller on localhost. Start Jenkins from the repository root:
+
+```bash
+docker compose -f jenkins/docker-compose.yml up -d --build
+docker exec -it $(docker ps | grep wheat-jenkins | cut -d ' ' -f 1) cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+Open http://localhost:8081, enter the password printed by the command, choose **Install
+recommended plugins**, then select **Skip and continue as admin user**. Set the Jenkins URL to
+`http://localhost:8081/`. The username is `admin`; use the same password printed by the command.
+
+Create a **Pipeline** job named `wheat-mlops-pipeline-b`. Under **Pipeline**, choose **Pipeline
+script from SCM**, select **Git**, set the repository URL to
+`https://github.com/Saatvik-Sinha/wheat-mlops.git`, branch specifier to `*/pipeline-b`, and script
+path to `Jenkinsfile`. Save and choose **Build Now**.
 
 | Job | What it does | Runs on |
 |---|---|---|
 | **Lint (ruff)** | `ruff check` and `ruff format --check` on all Python code (`src/notebooks/` is excluded in `pyproject.toml`) | push, PR |
 | **Test (pytest)** | installs dependencies with CPU-only PyTorch, runs the full test suite | push, PR |
 | **Docker image builds** | builds the `runtime` stage of `docker/Dockerfile` (no push), with layer caching | push, PR, after lint and test |
-| **Deploy frontend to GitHub Pages** | publishes `frontend/` to https://saatvik-sinha.github.io/wheat-mlops/ | push to `pipeline-a` only, after lint and test |
 
-`pipeline-a` is a protected branch: changes come in through pull requests that need one
-approving review, and the checks above run on every PR. To run the same checks locally, see
-step 0.
-
-The Jenkins version of this CI is on the `pipeline-b` branch (`Jenkinsfile`, setup in
-`jenkins/README.md`).
+Lint and Test run in parallel. See `jenkins/README.md` for the Jenkins controller and job setup.
 
 ---
 
@@ -375,7 +361,7 @@ The Jenkins version of this CI is on the `pipeline-b` branch (`Jenkinsfile`, set
   metric and the closest to the competition metric.
 
 Training curves (loss, precision, recall, mAP per epoch), the PR curve and the confusion matrix
-are in `data/working/trained/run/` after step 3, and in the MLflow run under **Artifacts -> plots**.
+are in `data/working/trained/run/` after step 3.
 
 **Service metrics** (from Prometheus/Grafana): request rate, p50/p95 latency of `/predict`,
 error rate, detections per image and mean confidence per image.
@@ -388,6 +374,7 @@ error rate, detections per image and mean confidence per image.
 minikube kubectl -- delete namespace wheat-mlops     # removes the API, Prometheus and Grafana
 minikube stop                            # or: minikube delete
 docker image rm wheat-mlops:0.2.0 wheat-mlops:runtime
+docker compose -f jenkins/docker-compose.yml down
 ```
 
 ---
