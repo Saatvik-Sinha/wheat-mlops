@@ -68,6 +68,27 @@ minikube kubectl -- rollout status deployment/wheat-api -n "$NAMESPACE" --timeou
 minikube kubectl -- rollout status deployment/prometheus -n "$NAMESPACE" --timeout=180s
 minikube kubectl -- rollout status deployment/grafana -n "$NAMESPACE" --timeout=180s
 
+echo 'Starting MLflow UI and its port forward...'
+bash "$REPO_ROOT/src/old_scripts/start_mlflow_ui_minikube.sh" \
+    >/tmp/wheat-mlflow-ui.log 2>&1 &
+MLFLOW_PID=$!
+FORWARD_PIDS="$FORWARD_PIDS $MLFLOW_PID"
+attempt=0
+until curl --fail --silent --output /dev/null http://localhost:5000/; do
+    attempt=$((attempt + 1))
+    if ! kill -0 "$MLFLOW_PID" 2>/dev/null; then
+        echo 'MLflow helper exited before localhost:5000 became ready:' >&2
+        cat /tmp/wheat-mlflow-ui.log >&2
+        exit 1
+    fi
+    if [ "$attempt" -ge 60 ]; then
+        echo 'MLflow UI did not become ready at http://localhost:5000.' >&2
+        echo 'Helper log: /tmp/wheat-mlflow-ui.log' >&2
+        exit 1
+    fi
+    sleep 1
+done
+
 echo 'Starting local port forwards...'
 minikube kubectl -- port-forward -n "$NAMESPACE" svc/wheat-api 8000:80 >/tmp/wheat-api-port-forward.log 2>&1 &
 FORWARD_PIDS="$FORWARD_PIDS $!"
@@ -96,7 +117,7 @@ until curl --fail --silent --show-error "$PUBLIC_HEALTH_URL"; do
     fi
     sleep 5
 done
-printf '\nBackend is live. Local endpoints: API http://localhost:8000/health, Prometheus http://localhost:9090, Grafana http://localhost:3000\n'
+printf '\nBackend is live. Local endpoints: API http://localhost:8000/health, MLflow http://localhost:5000, Prometheus http://localhost:9090, Grafana http://localhost:3000\n'
 echo 'Port forwards and ngrok remain active until Ctrl-C. Logs: /tmp/wheat-*.log'
 
 # Keep the forwarding subprocesses alive for the duration of this script.
