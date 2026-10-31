@@ -62,7 +62,7 @@ around a reasonable detector:
 | 8 | **Jenkins** | The same CI on `pipeline-b` (lint, test, DVC check) | `Jenkinsfile`, `jenkins/` on branch `pipeline-b` |
 
 Supporting tools: **uv** (Python environments), **pytest** and **ruff** (tests and lint),
-**FastAPI** (API), **ngrok** (public URL for the local API), **Kaggle GPU notebooks** (training), **docker**, **minikube**, **kubectl**.
+**FastAPI** (API), **ngrok** (public URL for the local API), **docker**, **minikube**, **kubectl**.
 
 ```mermaid
 flowchart LR
@@ -270,7 +270,6 @@ The pod is ready when `/health` passes; the startup probe allows up to 3 minutes
 to load. Open the API on your machine:
 
 ```bash
-echo 'Starting local port forwards...'
 minikube kubectl -- port-forward -n "$NAMESPACE" svc/wheat-api 8000:80
 ngrok http 8000 --url=https://oxychloric-carma-subgelatinously.ngrok-free.dev
 ```
