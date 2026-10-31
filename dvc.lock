@@ -3,16 +3,16 @@ stages:
   download_data:
     cmd: python -m wheat_mlops.download_data
     deps:
-    - path: src\python\wheat_mlops\download_data.py
+    - path: src/python/wheat_mlops/download_data.py
       hash: md5
-      md5: b3a40b5f73938befb536e95d9f479a23
-      size: 2377
+      md5: f6398314e135af6a050c578ffd3c80ba
+      size: 2691
     params:
       params.yaml:
         data.competition: global-wheat-detection
         data.raw_dir: data/raw
     outs:
-    - path: data\raw
+    - path: data/raw
       hash: md5
       md5: 301781641131f70237314d797c7a7760.dir
       size: 643571148
@@ -20,19 +20,19 @@ stages:
   prepare_data:
     cmd: python -m wheat_mlops.prepare_data
     deps:
-    - path: data\raw
+    - path: data/raw
       hash: md5
       md5: 301781641131f70237314d797c7a7760.dir
       size: 643571148
       nfiles: 3434
-    - path: src\python\wheat_mlops\config.py
+    - path: src/python/wheat_mlops/config.py
       hash: md5
       md5: 198e954cfa3f3cce88552db8a660a36d
       size: 252
-    - path: src\python\wheat_mlops\prepare_data.py
+    - path: src/python/wheat_mlops/prepare_data.py
       hash: md5
-      md5: dfafdf385c71a29517f829b2b8abe8ce
-      size: 8572
+      md5: 66752d7cd93e901dd389e19c0b76d2a5
+      size: 8828
     params:
       params.yaml:
         data.count_bucket: 15
@@ -44,24 +44,24 @@ stages:
         data.seed: 42
         data.val_fraction: 0.2
     outs:
-    - path: data\processed
+    - path: data/processed
       hash: md5
-      md5: ef1255f5d633687400eea1b82fd03d5f.dir
-      size: 639225058
+      md5: 68a5001ae89d7bec2fbbc1792c3fa6cb.dir
+      size: 639073849
       nfiles: 6847
   build_model:
     cmd: python -m wheat_mlops.build_model
     deps:
-    - path: data\processed
+    - path: data/processed
       hash: md5
-      md5: ef1255f5d633687400eea1b82fd03d5f.dir
-      size: 639225058
+      md5: 68a5001ae89d7bec2fbbc1792c3fa6cb.dir
+      size: 639073849
       nfiles: 6847
-    - path: src\python\wheat_mlops\build_model.py
+    - path: src/python/wheat_mlops/build_model.py
       hash: md5
-      md5: aa585786e8d5c1037d8ff6ca36354151
-      size: 2486
-    - path: src\python\wheat_mlops\config.py
+      md5: 51a01b3b5edc81a146956de1d3df71b7
+      size: 2714
+    - path: src/python/wheat_mlops/config.py
       hash: md5
       md5: 198e954cfa3f3cce88552db8a660a36d
       size: 252
@@ -71,11 +71,11 @@ stages:
         model.imgsz: 640
         model.pretrained: checkpoints/pretrained/yolov8n.pt
     outs:
-    - path: checkpoints\base\model_info.json
+    - path: checkpoints/base/model_info.json
       hash: md5
-      md5: ab01ccd77e2433cc94f0f4c711ed281d
-      size: 329
-    - path: checkpoints\base\yolov8n_base.pt
+      md5: e2b6af783640b2f8773250c1682f27a6
+      size: 317
+    - path: checkpoints/base/yolov8n_base.pt
       hash: md5
-      md5: 8a313316212ba888fbda82d86f39f2ae
+      md5: 79a0c9ef22eb2d3c6c1976ccc47ccbe2
       size: 6551250

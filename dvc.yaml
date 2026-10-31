@@ -2,18 +2,18 @@ stages:
   download_data:
     cmd: python -m wheat_mlops.download_data
     deps:
-    - src\python\wheat_mlops\download_data.py
+    - src/python/wheat_mlops/download_data.py
     params:
     - data.competition
     - data.raw_dir
     outs:
-    - data\raw
+    - data/raw
   prepare_data:
     cmd: python -m wheat_mlops.prepare_data
     deps:
-    - data\raw
-    - src\python\wheat_mlops\config.py
-    - src\python\wheat_mlops\prepare_data.py
+    - data/raw
+    - src/python/wheat_mlops/config.py
+    - src/python/wheat_mlops/prepare_data.py
     params:
     - data.count_bucket
     - data.link_images
@@ -24,19 +24,19 @@ stages:
     - data.seed
     - data.val_fraction
     outs:
-    - data\processed
+    - data/processed
   build_model:
     cmd: python -m wheat_mlops.build_model
     deps:
-    - data\processed
-    - src\python\wheat_mlops\build_model.py
-    - src\python\wheat_mlops\config.py
+    - data/processed
+    - src/python/wheat_mlops/build_model.py
+    - src/python/wheat_mlops/config.py
     params:
     - model.base_checkpoint
     - model.imgsz
     - model.pretrained
     outs:
-    - checkpoints\base\yolov8n_base.pt
+    - checkpoints/base/yolov8n_base.pt
     metrics:
-    - checkpoints\base\model_info.json:
+    - checkpoints/base/model_info.json:
         cache: false

@@ -1,12 +1,12 @@
 {
-  "pretrained_source": "checkpoints\\pretrained\\yolov8n.pt",
-  "base_checkpoint": "checkpoints\\base\\yolov8n_base.pt",
+  "pretrained_source": "checkpoints/pretrained/yolov8n.pt",
+  "base_checkpoint": "checkpoints/base/yolov8n_base.pt",
   "task": "detect",
   "imgsz": 640,
   "n_parameters": 3157200,
   "checkpoint_size_mb": 6.55,
   "ultralytics": "8.4.186",
-  "torch": "2.14.1+cpu",
+  "torch": "2.14.1+cu130",
   "cuda_available": false,
-  "python": "3.14.3"
+  "python": "3.14.10"
 }
