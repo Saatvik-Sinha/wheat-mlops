@@ -1,0 +1,16 @@
+train:
+  args:
+    batch: 32
+    cache: ram
+    close_mosaic: 10
+    epochs: 5
+    lr0: 0.01        # ← initial learning rate (default is 0.01)
+    lrf: 0.1        # ← final LR as a fraction of lr0 (default is 0.01)
+    fliplr: 0.5
+    flipud: 0.5
+    imgsz: 640
+    mixup: 0.1
+    patience: 15
+    seed: 42
+    workers: 0
+  model: data/working/trained/best.pt

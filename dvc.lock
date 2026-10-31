@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src\python\wheat_mlops\download_data.py
       hash: md5
-      md5: b3a40b5f73938befb536e95d9f479a23
-      size: 2377
+      md5: b1be6eb6458925e44873b43651f4d281
+      size: 2767
     params:
       params.yaml:
         data.competition: global-wheat-detection

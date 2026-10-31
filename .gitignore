@@ -13,7 +13,6 @@ venv/
 data/raw/
 data/
 *.pt
-/improve_params.yaml
 checkpoints/**/*.json
 runs/
 mlruns/
