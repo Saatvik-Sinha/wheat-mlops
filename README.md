@@ -8,7 +8,7 @@ using an Ultralytics YOLOv8 model. This branch is **Pipeline B** (DVC + Jenkins)
 |---|---|
 | Repository | https://github.com/Saatvik-Sinha/wheat-mlops (branch `pipeline-b`) |
 | Live frontend (GitHub Pages) | https://saatvik-sinha.github.io/wheat-mlops/ |
-| CI/CD | `Jenkinsfile` (run by the local Jenkins controller) |
+| CI/CD | [`Jenkinsfile`](jenkins/README.md) (run by the local Jenkins controller) |
 
 ---
 
@@ -65,14 +65,16 @@ flowchart LR
     K[(Kaggle dataset)] -->|kaggle API| DVC[DVC<br/>download_data<br/>data/raw]
     DVC --> PREP[prepare_data<br/>YOLO labels, stratified split]
     PREP --> TRAIN[train.py on <br/>YOLOv8s]
+    PREP -...->|"params, data stats"| ML[(Local<br/>CSV, JSON)]
     TRAIN -.->|"metrics, plots, best.pt"| ML
     TRAIN -->|best.pt| DOCKER[Docker image<br/>wheat-mlops:0.2.0]
-    DOCKER -->|minikube image load| K8S[Kubernetes<br/>wheat-api Deployment]
+    DOCKER ---->|minikube image load| K8S[Kubernetes<br/>wheat-api Deployment]
+    DOCKER -->|docker compose| JEN
     K8S -->|/metrics| PROM[Prometheus]
     PROM --> GRAF[Grafana dashboard]
-    K8S -.->|"prediction traces"| ML
-    GHA -->|deploy| FE
-    GIT --> JEN[Jenkins<br/>pipeline-b]
+    FE[Frontend<br/>GitHub Pages] -->|POST /predict<br/>localhost or ngrok| K8S
+    GIT[git push / PR] --> JEN[Jenkins<br/>lint, test, docker build]
+    GIT --> GHA[Github Actions<br/>pipeline-a]
 ```
 
 ---
