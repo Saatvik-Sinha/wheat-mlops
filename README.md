@@ -271,6 +271,11 @@ to load. Open the API on your machine:
 
 ```bash
 minikube kubectl -- port-forward -n "$NAMESPACE" svc/wheat-api 8000:80
+```
+
+In another terminal, start the public tunnel:
+
+```
 ngrok http 8000 --url=https://oxychloric-carma-subgelatinously.ngrok-free.dev
 ```
 
