@@ -1,0 +1,32 @@
+# Synthetic validation-image corruptions for robustness experiments.
+generation:
+  seed: 42
+  output_quality: 95
+  severities:
+    gaussian_blur: [0.5, 1.0, 1.5, 2.0, 3.0] # Gaussian radius, pixels
+    gaussian_noise: [5, 10, 15, 20, 25] # standard deviation on 0..255 RGB values
+    brightness: [0.1, 0.2, 0.3, 0.4, 0.5] # absolute brightness-factor offset from 1
+    contrast: [0.1, 0.2, 0.3, 0.4, 0.5] # absolute contrast-factor offset from 1
+    jpeg_compression: [70, 50, 35, 20, 10] # JPEG quality
+
+evaluation:
+  checkpoint: data/working/trained/best.pt
+  imgsz: 640
+  batch: 8
+  device: "" # empty means Ultralytics selects CPU/GPU
+  confidence: 0.001
+  iou: 0.7
+  search_images: 64
+
+spsa:
+  iterations: 8
+  seed: 42
+  a: 0.2
+  c: 0.1
+  alpha: 0.602
+  gamma: 0.101
+  stability_constant: 4
+  parameters:
+    blur_sigma: [0.0, 3.0]
+    noise_sigma: [0.0, 25.0]
+    brightness_delta: [-0.5, 0.5]

@@ -8,3 +8,32 @@ stages:
     - data.raw_dir
     outs:
     - data\raw
+
+  prepare_data:
+    cmd: python -m wheat_mlops.prepare_data --params params.yaml
+    deps:
+    - src/python/wheat_mlops/prepare_data.py
+    - src/python/wheat_mlops/config.py
+    - data/raw
+    params:
+    - params.yaml:
+      - data.val_fraction
+      - data.seed
+      - data.count_bucket
+      - data.max_count_bucket
+      - data.min_box_area
+      - data.max_box_area
+      - data.link_images
+      - data.raw_dir
+      - data.processed_dir
+    outs:
+    - data/processed
+
+  generate_perturbations:
+    cmd: python -m wheat_mlops.perturbations generate --processed-dir data/processed --out-dir data/perturbed --config perturbations.yaml --overwrite
+    deps:
+    - src/python/wheat_mlops/perturbations.py
+    - data/processed
+    - perturbations.yaml
+    outs:
+    - data/perturbed

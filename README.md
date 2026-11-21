@@ -25,6 +25,7 @@ tracking and Jenkins, so the two approaches can be compared.
 8. [Troubleshooting](#8-troubleshooting)
 9. [Clean up](#9-clean-up)
 10. [Team](#10-team)
+11. [Image robustness extension](#image-robustness-extension)
 
 ---
 
@@ -404,3 +405,38 @@ docker image rm wheat-mlops:0.2.0 wheat-mlops:runtime
 | Saatvik Sinha | Docker, Kubernetes |
 | Ritu Raj Sharma | GitHub Actions, Jenkins |
 | Lomesh Soni | Prometheus, Grafana |
+
+---
+
+## Image robustness extension
+
+The robustness experiment uses the prepared validation split only. It creates clean copies and
+five severity levels of Gaussian blur, Gaussian noise, brightness shift, contrast shift, and JPEG
+compression. The generator is deterministic for a fixed configuration and seed, preserves YOLO
+labels, and writes `data/perturbed/manifest.csv` with the source image, generated image, split,
+corruption parameters, and seed.
+
+Generate the dataset (add `--overwrite` to replace an existing output):
+
+```bash
+uv run python -m wheat_mlops.perturbations generate
+```
+
+The DVC pipeline also prepares the YOLO dataset and generates the perturbations locally:
+
+```bash
+uv run dvc repro generate_perturbations
+```
+
+Run the standard corruption benchmark and SPSA search with the configured trained checkpoint:
+
+```bash
+uv run python -m wheat_mlops.robustness --dataset-dir data/perturbed
+```
+
+The checkpoint defaults to `data/working/trained/best.pt` and can be overridden with
+`--checkpoint`. SPSA searches blur, noise, and brightness on a deterministic, stratified subset;
+standard conditions and the selected SPSA setting are compared on the remaining validation
+images. The objective is `1 - mAP@0.5:0.95`. Each run writes metrics, the SPSA history, a JSON
+report, and clean/degraded example pairs under `data/robustness/results/`, and logs them to the
+local MLflow experiment. DVC tracks the generated dataset and manifest.
