@@ -16,3 +16,11 @@ entry_points:
     parameters:
       params_path: {type: str, default: "params.yaml"}
     command: "python -m wheat_mlops.build_model --track --params {params_path}"
+
+  evaluate_uncertainty:
+    parameters:
+      model_path: {type: str, default: ""}
+      iou_thresh: {type: float, default: 0.5}
+      n_bins: {type: int, default: 10}
+      num_samples: {type: int, default: 50}
+    command: "python -m wheat_mlops.evaluate_uncertainty --iou-thresh {iou_thresh} --n-bins {n_bins} --num-samples {num_samples}"

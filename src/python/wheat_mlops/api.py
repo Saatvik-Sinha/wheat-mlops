@@ -45,7 +45,14 @@ from pydantic import BaseModel
 LATENCY_BUCKETS = (0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
 DETECTION_BUCKETS = (0, 1, 5, 10, 20, 30, 50, 75, 100, 150)
 CONFIDENCE_BUCKETS = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0)
-UNTRACKED_PATHS = {"/metrics", "/health", "/docs", "/redoc", "/openapi.json"}
+UNTRACKED_PATHS = {
+    "/metrics",
+    "/health",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    "/uncertainty/summary",
+}
 MAX_PIXELS = 25_000_000
 MLFLOW_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT_NAME", "wheat-api")
 
@@ -113,6 +120,12 @@ class Metrics:
             "Confidence of each detected box",
             ["model_version"],
             buckets=CONFIDENCE_BUCKETS,
+            registry=self.registry,
+        )
+        self.uncertain_detections = Counter(
+            "wheat_api_uncertain_detections_total",
+            "Total detected boxes with low confidence / high uncertainty",
+            ["model_version"],
             registry=self.registry,
         )
 
@@ -312,6 +325,8 @@ def create_app(detector: YoloDetector | None = None) -> FastAPI:
             metrics.detections.labels(model_version).observe(len(boxes))
             for score in scores:
                 metrics.confidence.labels(model_version).observe(score)
+                if score < 0.5:
+                    metrics.uncertain_detections.labels(model_version).inc()
             result = PredictResponse(
                 count=len(boxes),
                 mean_confidence=sum(scores) / len(scores) if scores else None,
@@ -331,6 +346,15 @@ def create_app(detector: YoloDetector | None = None) -> FastAPI:
                 }
             )
             return result
+
+    @app.get("/uncertainty/summary")
+    def uncertainty_summary():
+        summary_path = Path("data/working/uncertainty/uncertainty_summary.json")
+        if summary_path.is_file():
+            import json
+
+            return JSONResponse(json.loads(summary_path.read_text(encoding="utf-8")))
+        return JSONResponse({"status": "no_uncertainty_run_yet"}, status_code=404)
 
     return app
 

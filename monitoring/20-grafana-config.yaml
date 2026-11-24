@@ -74,21 +74,39 @@ data:
       "panels": [
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
           "id": 100,
           "title": "Service Health & Status",
           "type": "row"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "thresholds" },
+              "color": {
+                "mode": "thresholds"
+              },
               "mappings": [
                 {
                   "options": {
-                    "0": { "color": "red", "index": 0, "text": "DOWN" },
-                    "1": { "color": "green", "index": 1, "text": "UP" }
+                    "0": {
+                      "color": "red",
+                      "index": 0,
+                      "text": "DOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "UP"
+                    }
                   },
                   "type": "value"
                 }
@@ -96,14 +114,25 @@ data:
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "red", "value": null },
-                  { "color": "green", "value": 1 }
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
                 ]
               }
             },
             "overrides": []
           },
-          "gridPos": { "h": 4, "w": 12, "x": 0, "y": 1 },
+          "gridPos": {
+            "h": 4,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
           "id": 1,
           "options": {
             "colorMode": "value",
@@ -111,7 +140,9 @@ data:
             "justifyMode": "auto",
             "orientation": "horizontal",
             "reduceOptions": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": "",
               "values": false
             },
@@ -120,7 +151,10 @@ data:
           "pluginVersion": "10.4.2",
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "up",
               "instant": true,
@@ -133,10 +167,15 @@ data:
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "palette-classic" },
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
                 "axisBorderShow": false,
                 "axisCenteredZero": false,
@@ -153,7 +192,12 @@ data:
             },
             "overrides": []
           },
-          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 1 },
+          "gridPos": {
+            "h": 4,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
           "id": 2,
           "options": {
             "legend": {
@@ -162,11 +206,17 @@ data:
               "placement": "right",
               "showLegend": true
             },
-            "tooltip": { "mode": "single", "sort": "none" }
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "sum by (job) (rate(wheat_api_requests_total[1m]))",
               "legendFormat": "{{job}} Total RPS",
@@ -179,16 +229,26 @@ data:
         },
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          },
           "id": 101,
           "title": "Traffic & Latency Performance",
           "type": "row"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "palette-classic" },
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
                 "axisLabel": "req/sec",
                 "fillOpacity": 20,
@@ -198,7 +258,12 @@ data:
             },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          },
           "id": 3,
           "options": {
             "legend": {
@@ -207,11 +272,17 @@ data:
               "placement": "bottom",
               "showLegend": true
             },
-            "tooltip": { "mode": "multi", "sort": "desc" }
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "sum by (endpoint, status) (rate(wheat_api_requests_total[1m]))",
               "legendFormat": "{{endpoint}} (status: {{status}})",
@@ -223,10 +294,15 @@ data:
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "palette-classic" },
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
                 "axisLabel": "Latency (s)",
                 "fillOpacity": 15,
@@ -235,16 +311,30 @@ data:
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "yellow", "value": 0.25 },
-                  { "color": "red", "value": 0.5 }
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.25
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.5
+                  }
                 ]
               },
               "unit": "s"
             },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
           "id": 4,
           "options": {
             "legend": {
@@ -253,11 +343,17 @@ data:
               "placement": "bottom",
               "showLegend": true
             },
-            "tooltip": { "mode": "multi", "sort": "desc" }
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum by (le, endpoint) (rate(wheat_api_request_duration_seconds_bucket[1m])))",
               "legendFormat": "p50 Latency ({{endpoint}})",
@@ -265,7 +361,10 @@ data:
               "refId": "A"
             },
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(wheat_api_request_duration_seconds_bucket[1m])))",
               "legendFormat": "p95 Latency ({{endpoint}})",
@@ -278,16 +377,26 @@ data:
         },
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          },
           "id": 102,
           "title": "Errors & Inference Quality Metrics",
           "type": "row"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "thresholds" },
+              "color": {
+                "mode": "thresholds"
+              },
               "custom": {
                 "axisLabel": "Error %",
                 "fillOpacity": 25,
@@ -296,16 +405,30 @@ data:
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "yellow", "value": 1 },
-                  { "color": "red", "value": 5 }
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
                 ]
               },
               "unit": "percent"
             },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 15 },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 15
+          },
           "id": 5,
           "options": {
             "legend": {
@@ -314,11 +437,17 @@ data:
               "placement": "bottom",
               "showLegend": true
             },
-            "tooltip": { "mode": "single", "sort": "none" }
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "(sum(rate(wheat_api_errors_total[1m])) / clamp_min(sum(rate(wheat_api_requests_total[1m])), 0.0001)) * 100",
               "legendFormat": "Error Rate (%)",
@@ -330,10 +459,15 @@ data:
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "palette-classic" },
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
                 "axisLabel": "Detections / Image",
                 "fillOpacity": 20,
@@ -343,7 +477,12 @@ data:
             },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 15 },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 15
+          },
           "id": 6,
           "options": {
             "legend": {
@@ -352,11 +491,17 @@ data:
               "placement": "bottom",
               "showLegend": true
             },
-            "tooltip": { "mode": "multi", "sort": "desc" }
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "sum by (model_version) (rate(wheat_api_detections_per_image_sum[1m])) / clamp_min(sum by (model_version) (rate(wheat_api_detections_per_image_count[1m])), 0.0001)",
               "legendFormat": "Avg Detections/Image ({{model_version}})",
@@ -364,7 +509,10 @@ data:
               "refId": "A"
             },
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum by (le, model_version) (rate(wheat_api_detections_per_image_bucket[1m])))",
               "legendFormat": "p90 Detections/Image ({{model_version}})",
@@ -376,10 +524,15 @@ data:
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "palette-classic" },
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
                 "axisLabel": "Confidence (0-1)",
                 "fillOpacity": 20,
@@ -391,7 +544,12 @@ data:
             },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 15 },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 15
+          },
           "id": 7,
           "options": {
             "legend": {
@@ -400,11 +558,17 @@ data:
               "placement": "bottom",
               "showLegend": true
             },
-            "tooltip": { "mode": "single", "sort": "none" }
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "editorMode": "code",
               "expr": "sum by (model_version) (rate(wheat_api_detection_confidence_sum[1m])) / clamp_min(sum by (model_version) (rate(wheat_api_detection_confidence_count[1m])), 0.0001)",
               "legendFormat": "Mean Confidence ({{model_version}})",
@@ -414,19 +578,254 @@ data:
           ],
           "title": "Model Detection Confidence",
           "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "id": 103,
+          "title": "Detection Uncertainty & Calibration Metrics (M2 Extension)",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Total detected boxes with confidence < 0.50 (low confidence / high uncertainty)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 50
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 24
+          },
+          "id": 8,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "sum(wheat_api_uncertain_detections_total)",
+              "legendFormat": "Uncertain Detections Total",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Cumulative Uncertain Detections (< 0.50)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Rate of low-confidence (< 0.50) detections per second",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "Uncertain Detections / sec",
+                "fillOpacity": 25,
+                "lineWidth": 2
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 24
+          },
+          "id": 9,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "sum by (model_version) (rate(wheat_api_uncertain_detections_total[1m]))",
+              "legendFormat": "Uncertain Detections Rate ({{model_version}})",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Uncertain Detections Rate (Per Second)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Percentage of all detected bounding boxes that have confidence < 0.50",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisLabel": "Uncertainty %",
+                "fillOpacity": 25,
+                "lineWidth": 2
+              },
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 15
+                  },
+                  {
+                    "color": "red",
+                    "value": 30
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 24
+          },
+          "id": 10,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "(sum(rate(wheat_api_uncertain_detections_total[1m])) / clamp_min(sum(rate(wheat_api_detection_confidence_count[1m])), 0.0001)) * 100",
+              "legendFormat": "Uncertain Detections %",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Uncertainty Ratio (% of Total Detections)",
+          "type": "timeseries"
         }
       ],
       "refresh": "5s",
       "schemaVersion": 38,
       "style": "dark",
-      "tags": ["wheat-mlops", "monitoring", "yolo"],
-      "templating": { "list": [] },
-      "time": { "from": "now-15m", "to": "now" },
+      "tags": [
+        "wheat-mlops",
+        "monitoring",
+        "yolo"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-15m",
+        "to": "now"
+      },
       "timepicker": {
-        "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+        "refresh_intervals": [
+          "5s",
+          "10s",
+          "30s",
+          "1m",
+          "5m"
+        ]
       },
       "timezone": "browser",
       "title": "Wheat Detection API - Performance & Quality",
       "uid": "wheat-api-overview",
       "version": 1
     }
+
