@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src\python\wheat_mlops\download_data.py
       hash: md5
-      md5: b1be6eb6458925e44873b43651f4d281
-      size: 2767
+      md5: f6398314e135af6a050c578ffd3c80ba
+      size: 2691
     params:
       params.yaml:
         data.competition: global-wheat-detection
@@ -17,3 +17,60 @@ stages:
       md5: 301781641131f70237314d797c7a7760.dir
       size: 643571148
       nfiles: 3434
+  prepare_data:
+    cmd: python -m wheat_mlops.prepare_data --params params.yaml
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 301781641131f70237314d797c7a7760.dir
+      size: 643571148
+      nfiles: 3434
+    - path: src/python/wheat_mlops/config.py
+      hash: md5
+      md5: 198e954cfa3f3cce88552db8a660a36d
+      size: 252
+    - path: src/python/wheat_mlops/prepare_data.py
+      hash: md5
+      md5: a4b67f2ace6106459d7a4cc546da33e0
+      size: 10373
+    params:
+      params.yaml:
+        data.count_bucket: 15
+        data.link_images: true
+        data.max_box_area: 100000
+        data.max_count_bucket: 6
+        data.min_box_area: 100
+        data.processed_dir: data/processed
+        data.raw_dir: data/raw
+        data.seed: 42
+        data.val_fraction: 0.2
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: ef1255f5d633687400eea1b82fd03d5f.dir
+      size: 639225058
+      nfiles: 6847
+  generate_perturbations:
+    cmd: python -m wheat_mlops.perturbations generate --processed-dir 
+      data/processed --out-dir data/perturbed --config perturbations.yaml 
+      --overwrite
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: ef1255f5d633687400eea1b82fd03d5f.dir
+      size: 639225058
+      nfiles: 6847
+    - path: perturbations.yaml
+      hash: md5
+      md5: 4b6418d882af8c968ddb22423cecc4c5
+      size: 900
+    - path: src/python/wheat_mlops/perturbations.py
+      hash: md5
+      md5: b6f80a993b3360d8a3282feecac1f8c1
+      size: 11247
+    outs:
+    - path: data/perturbed
+      hash: md5
+      md5: a066ed0e2b9d917c3762bd163a1ea522.dir
+      size: 6886366124
+      nfiles: 35625
