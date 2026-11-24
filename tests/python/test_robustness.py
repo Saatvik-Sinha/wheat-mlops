@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-
 from wheat_mlops.robustness import select_search_ids, spsa_optimize
 
 

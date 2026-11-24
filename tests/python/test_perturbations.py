@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pandas as pd
 from PIL import Image
-
 from wheat_mlops.perturbations import (
     CORRUPTIONS,
     apply_perturbation,
