@@ -382,8 +382,42 @@ The Jenkins version of this CI is on the `pipeline-b` branch (`Jenkinsfile`, set
 Training curves (loss, precision, recall, mAP per epoch), the PR curve and the confusion matrix
 are in `data/working/trained/run/` after step 3, and in the MLflow run under **Artifacts -> plots**.
 
+### M2: Detection Uncertainty Estimation & Confidence Calibration
+
+This module evaluates the reliability of model confidence scores (whether a 0.95 confidence detection actually corresponds to a true wheat head or a hallucination/background false positive):
+
+1. **A. Collect confidence scores**:
+   Runs YOLO inference and records confidence distributions across:
+   - Clean images (unmodified validation set)
+   - Mildly degraded images (subtle blur, low noise, slight contrast perturbation)
+   - Moderately degraded images (medium blur, moderate Gaussian noise, JPEG compression)
+   - Heavily degraded images (severe defocus blur, high noise, extreme contrast)
+   - Domain-shifted images (field fog/haze, sunset color temperature shifts, shadow patterns)
+
+2. **B. Check whether predictions are correct**:
+   For each predicted box:
+   - Calculates Intersection over Union (IoU) with all ground-truth boxes.
+   - Matches predicted and ground-truth boxes using a strict one-to-one matching procedure (sorted by confidence descending).
+   - Labels the prediction as a True Positive (TP, Scenario A) if matched to an unmatched GT with IoU $\ge$ 0.5, or False Positive (FP, Scenario B) otherwise.
+
+3. **C. Evaluate confidence calibration**:
+   - **Reliability Diagrams**: Confidence vs. actual accuracy per bin, with gap errors and sample count histograms.
+   - **Calibration Errors**: Expected Calibration Error (ECE) and Maximum Calibration Error (MCE).
+   - **Brier Score**: Mean squared error between predicted confidence probabilities and binary correctness outcomes.
+   - **MLflow Tracking**: Tracked under experiment `wheat-uncertainty` logging all scalar metrics, comparative curves, and reliability diagram plots.
+   - **Prometheus & Grafana**: Exposes `wheat_api_uncertain_detections_total` metric and `/uncertainty/summary` endpoint.
+
+Run evaluation:
+```bash
+# Fast smoke run on 15 images
+python -m wheat_mlops.evaluate_uncertainty --smoke
+
+# Full evaluation across all conditions
+python -m wheat_mlops.evaluate_uncertainty --iou-thresh 0.5 --n-bins 10
+```
+
 **Service metrics** (from Prometheus/Grafana): request rate, p50/p95 latency of `/predict`,
-error rate, detections per image and mean confidence per image.
+error rate, detections per image, mean confidence per image, and uncertainty counters.
 
 ---
 

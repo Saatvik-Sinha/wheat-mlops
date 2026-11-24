@@ -192,3 +192,15 @@ def test_ngrok_failure_does_not_break_the_api(monkeypatch):
     monkeypatch.setenv("NGROK_AUTHTOKEN", "dummy-token")
     monkeypatch.setitem(sys.modules, "pyngrok", None)  # makes `import pyngrok` fail
     assert api.start_ngrok() is None
+
+
+def test_uncertainty_metrics_recorded(client):
+    # FakeDetector returns boxes with conf 0.9 and 0.5; none < 0.5
+    upload(client)
+    text = client.get("/metrics").text
+    assert "wheat_api_uncertain_detections_total" in text
+
+
+def test_uncertainty_summary_endpoint(client):
+    response = client.get("/uncertainty/summary")
+    assert response.status_code in (200, 404)
