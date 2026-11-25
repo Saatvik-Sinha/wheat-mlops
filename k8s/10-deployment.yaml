@@ -41,6 +41,8 @@ spec:
                   name: wheat-api-secrets
                   key: NGROK_AUTHTOKEN
                   optional: true
+            - name: STABILITY_SUMMARY_PATH   # M3: see monitoring/README.md ("Bounding-box stability")
+              value: /app/stability/condition_summary.csv
             - name: NGROK_DOMAIN
               valueFrom:
                 secretKeyRef:
@@ -70,9 +72,18 @@ spec:
             limits:
               cpu: "2"
               memory: 3Gi
+          volumeMounts:
+            - name: stability-summary
+              mountPath: /app/stability
+              readOnly: true
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+      volumes:
+        - name: stability-summary      # optional: the API starts fine without this ConfigMap
+          configMap:
+            name: wheat-stability-summary
+            optional: true
