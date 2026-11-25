@@ -2,12 +2,12 @@ stages:
   download_data:
     cmd: python -m wheat_mlops.download_data
     deps:
-    - src\python\wheat_mlops\download_data.py
+    - src/python/wheat_mlops/download_data.py
     params:
     - data.competition
     - data.raw_dir
     outs:
-    - data\raw
+    - data/raw
 
   prepare_data:
     cmd: python -m wheat_mlops.prepare_data --params params.yaml
@@ -37,3 +37,12 @@ stages:
     - perturbations.yaml
     outs:
     - data/perturbed
+
+  stability:
+    cmd: python -m wheat_mlops.stability.collect --overwrite && python -m wheat_mlops.stability.metrics && python -m wheat_mlops.stability.report
+    deps:
+    - src/python/wheat_mlops/stability
+    - data/perturbed
+    - stability.yaml
+    outs:
+    - data/stability

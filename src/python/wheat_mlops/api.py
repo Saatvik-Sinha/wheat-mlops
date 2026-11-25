@@ -13,6 +13,7 @@ Env:  MODEL_PATH         default /app/models/best.pt
       INFERENCE_THREADS  torch CPU threads, default 2
       CORS_ORIGINS       comma-separated origins, default "*"
       MAX_UPLOAD_MB      default 10
+      STABILITY_SUMMARY_PATH  M3 condition_summary.csv exported as wheat_api_stability_* gauges
 
 Endpoints: POST /predict, GET /health, GET /metrics (Prometheus), GET /docs.
 Metric names and labels follow the contract in monitoring/README.md.
@@ -20,7 +21,9 @@ Metric names and labels follow the contract in monitoring/README.md.
 
 from __future__ import annotations
 
+import csv
 import io
+import math
 import os
 import threading
 import time
@@ -36,6 +39,7 @@ from prometheus_client import (
     CONTENT_TYPE_LATEST,
     CollectorRegistry,
     Counter,
+    Gauge,
     Histogram,
     ProcessCollector,
     generate_latest,
@@ -52,9 +56,47 @@ UNTRACKED_PATHS = {
     "/redoc",
     "/openapi.json",
     "/uncertainty/summary",
+    "/stability/summary",
 }
 MAX_PIXELS = 25_000_000
 MLFLOW_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT_NAME", "wheat-api")
+# M3 bounding-box stability, written by `python -m wheat_mlops.stability.metrics`.
+STABILITY_SUMMARY_PATH = os.getenv(
+    "STABILITY_SUMMARY_PATH", "data/stability/metrics/condition_summary.csv"
+)
+# metric column in condition_summary.csv -> Prometheus help text
+STABILITY_METRICS = {
+    "matched_ratio": "Share of clean-image boxes still detected under degradation",
+    "mean_iou": "Mean IoU between matched clean and degraded boxes",
+    "center_disp_px": "Mean displacement of matched box centres in pixels",
+    "abs_count_diff": "Mean absolute difference in detection count vs the clean image",
+    "width_change_pct": "Mean absolute width change of matched boxes in percent",
+    "height_change_pct": "Mean absolute height change of matched boxes in percent",
+    "conf_diff": "Mean change in detection confidence vs the clean image",
+}
+
+
+def load_condition_summary(path: str | Path) -> list[dict]:
+    """Rows of the stability summary (``corruption``, ``severity``, metrics); [] if missing.
+
+    Missing or NaN values are left out of a row.
+    """
+    path = Path(path)
+    if not path.is_file():
+        return []
+    rows: list[dict] = []
+    with path.open(newline="", encoding="utf-8") as handle:
+        for raw in csv.DictReader(handle):
+            row: dict = {"corruption": raw["corruption"], "severity": int(float(raw["severity"]))}
+            for metric in STABILITY_METRICS:
+                try:
+                    value = float(raw.get(metric, ""))
+                except ValueError:
+                    continue
+                if math.isfinite(value):
+                    row[metric] = value
+            rows.append(row)
+    return rows
 
 
 class ApiError(Exception):
@@ -128,6 +170,31 @@ class Metrics:
             ["model_version"],
             registry=self.registry,
         )
+        # M3: bounding-box stability per degradation, exported from the offline stability run.
+        self.stability = {
+            metric: Gauge(
+                f"wheat_api_stability_{metric}",
+                help_text,
+                ["corruption", "severity"],
+                registry=self.registry,
+            )
+            for metric, help_text in STABILITY_METRICS.items()
+        }
+        self._stability_stamp: tuple | None = None
+
+    def refresh_stability(self, path: str | Path) -> None:
+        """Re-read the stability summary when the file changed (cheap, called per scrape)."""
+        path = Path(path)
+        stamp = (path.stat().st_mtime_ns, path.stat().st_size) if path.is_file() else None
+        if stamp == self._stability_stamp:
+            return
+        self._stability_stamp = stamp
+        for gauge in self.stability.values():
+            gauge.clear()  # drop series of conditions that no longer exist
+        for row in load_condition_summary(path):
+            for metric, gauge in self.stability.items():
+                if metric in row:
+                    gauge.labels(row["corruption"], str(row["severity"])).set(row[metric])
 
 
 class YoloDetector:
@@ -279,6 +346,7 @@ def create_app(detector: YoloDetector | None = None) -> FastAPI:
 
     @app.get("/metrics", include_in_schema=False)
     def prometheus_metrics():
+        metrics.refresh_stability(STABILITY_SUMMARY_PATH)
         return Response(generate_latest(metrics.registry), media_type=CONTENT_TYPE_LATEST)
 
     @app.post("/predict", response_model=PredictResponse)
@@ -355,6 +423,13 @@ def create_app(detector: YoloDetector | None = None) -> FastAPI:
 
             return JSONResponse(json.loads(summary_path.read_text(encoding="utf-8")))
         return JSONResponse({"status": "no_uncertainty_run_yet"}, status_code=404)
+
+    @app.get("/stability/summary")
+    def stability_summary():
+        rows = load_condition_summary(STABILITY_SUMMARY_PATH)
+        if not rows:
+            return JSONResponse({"status": "no_stability_run_yet"}, status_code=404)
+        return JSONResponse({"conditions": rows})
 
     return app
 

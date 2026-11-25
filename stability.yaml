@@ -1,0 +1,32 @@
+# M3: bounding-box stability under image degradation.
+# Read by `python -m wheat_mlops.stability.collect` (Part A) and later stability stages.
+collect:
+  perturbed_dir: data/perturbed        # output of `wheat_mlops.perturbations generate` (M1)
+  out_dir: data/stability              # detections are written to <out_dir>/detections/
+  # Checkpoints are tried in order; the first one that exists is used.
+  checkpoints:
+    - data/working/trained/best.pt
+    - checkpoints/base/yolov8n_base.pt
+    - checkpoints/pretrained/yolov8n.pt
+  imgsz: 640
+  conf: 0.25      # deployment-like threshold; boxes below it are not saved
+  iou: 0.7        # NMS IoU threshold
+  batch: 8
+  device: ""      # empty = Ultralytics picks GPU if available, else CPU
+  max_images: null  # set an int to run on the first N validation images only (smoke runs)
+
+metrics:
+  match_iou: 0.5   # a degraded box counts as "the same wheat head" if IoU with a clean box >= this
+
+report:
+  out_subdir: report                 # written under <collect.out_dir>/
+  plot_metrics:                      # panels of the stability-vs-severity figure
+    - matched_ratio
+    - mean_iou
+    - center_disp_px
+    - abs_count_diff
+    - width_change_pct
+    - conf_diff
+  overlay_image: null                # image id for the before/after boxes; null = auto-pick
+  overlay_severities: [1, 3, 5]
+  mlflow_experiment: wheat-stability
